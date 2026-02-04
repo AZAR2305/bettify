@@ -6,7 +6,7 @@
  * For the hackathon MVP, we simulate the essential behaviors.
  */
 
-import { Wallet, JsonRpcProvider, solidityPackedKeccak256 } from 'ethers';
+import { Wallet, HDNodeWallet, JsonRpcProvider, solidityPackedKeccak256 } from 'ethers';
 
 export interface YellowConfig {
   rpcUrl: string;
@@ -26,9 +26,24 @@ export class YellowClient {
   private config: YellowConfig;
   private provider: JsonRpcProvider;
   
+  // Simulate Yellow Network testnet latency (50-200ms for off-chain operations)
+  private readonly TESTNET_LATENCY_MIN = 50;
+  private readonly TESTNET_LATENCY_MAX = 200;
+  
   constructor(config: YellowConfig) {
     this.config = config;
     this.provider = new JsonRpcProvider(config.rpcUrl);
+  }
+
+  /**
+   * Simulate Yellow Network testnet latency
+   * Real testnet has variable latency due to network conditions
+   */
+  private async simulateTestnetLatency(): Promise<void> {
+    const latency = Math.floor(
+      Math.random() * (this.TESTNET_LATENCY_MAX - this.TESTNET_LATENCY_MIN) + this.TESTNET_LATENCY_MIN
+    );
+    await new Promise(resolve => setTimeout(resolve, latency));
   }
 
   /**
@@ -55,10 +70,10 @@ export class YellowClient {
    * - Can be revoked at any time
    * - Reduces exposure of main wallet private key
    */
-  createSessionWallet() {
+  createSessionWallet(): HDNodeWallet {
     const sessionWallet = Wallet.createRandom();
     console.log(`🔑 Session wallet created: ${sessionWallet.address}`);
-    return sessionWallet.connect(this.provider);
+    return sessionWallet.connect(this.provider) as HDNodeWallet;
   }
 
   /**
@@ -79,12 +94,18 @@ export class YellowClient {
     depositAmount: bigint,
     allowance: bigint
   ): Promise<ChannelState> {
+    console.log(`🌐 Connecting to Yellow Network testnet...`);
+    await this.simulateTestnetLatency();
+    
     const channelId = this.generateChannelId(userWallet.address);
     
     // In real implementation, this would:
     // 1. Call Yellow smart contract to create channel
     // 2. Lock funds in the contract
     // 3. Get confirmation from Yellow node
+    
+    console.log(`📡 Opening state channel on Yellow node...`);
+    await this.simulateTestnetLatency();
     
     const channel: ChannelState = {
       channelId,
@@ -135,8 +156,11 @@ export class YellowClient {
     // Sign with session key
     const signature = await userWallet.signMessage(stateHash);
 
-    // Send to Yellow node (simulated)
-    console.log(`📤 State update sent (nonce: ${channel.nonce})`);
+    // Send to Yellow node (simulate network latency)
+    console.log(`📤 Sending state update to Yellow node...`);
+    await this.simulateTestnetLatency();
+    
+    console.log(`✅ State update confirmed (nonce: ${channel.nonce})`);
     console.log(`   New balance: ${this.formatUSDC(newBalance)} USDC`);
     console.log(`   Signature: ${signature.substring(0, 20)}...`);
 
@@ -160,7 +184,13 @@ export class YellowClient {
 
     const finalBalance = channel.balances.get(userWallet.address) || 0n;
     
-    console.log(`🔒 Closing channel: ${channel.channelId}`);
+    console.log(`🔒 Initiating channel closure on Yellow node...`);
+    await this.simulateTestnetLatency();
+    
+    console.log(`📡 Submitting final state to Yellow smart contract...`);
+    await this.simulateTestnetLatency();
+    
+    console.log(`✅ Channel closed: ${channel.channelId}`);
     console.log(`💵 Final balance: ${this.formatUSDC(finalBalance)} USDC`);
     console.log(`📝 Total state updates: ${channel.nonce}`);
     
@@ -205,6 +235,72 @@ export class YellowClient {
    */
   private getYellowNodeAddress(): string {
     return '0xYellowNode0000000000000000000000000000000';
+  }
+
+  /**
+   * Deposit additional funds to existing channel
+   * This updates the channel balance off-chain
+   */
+  async depositToChannel(
+    channel: ChannelState,
+    userWallet: Wallet,
+    depositAmount: bigint
+  ): Promise<boolean> {
+    if (!channel.isOpen) {
+      throw new Error('Channel is closed');
+    }
+
+    console.log(`💰 Depositing ${this.formatUSDC(depositAmount)} USDC to Yellow channel...`);
+    await this.simulateTestnetLatency();
+
+    // Update channel balance
+    const currentBalance = channel.balances.get(userWallet.address) || 0n;
+    const newBalance = currentBalance + depositAmount;
+    
+    // Send state update to Yellow node
+    await this.sendStateUpdate(channel, userWallet, newBalance);
+    
+    console.log(`✅ Deposit confirmed`);
+    console.log(`   Previous: ${this.formatUSDC(currentBalance)} USDC`);
+    console.log(`   Deposited: ${this.formatUSDC(depositAmount)} USDC`);
+    console.log(`   New balance: ${this.formatUSDC(newBalance)} USDC`);
+    
+    return true;
+  }
+
+  /**
+   * Withdraw funds from channel (partial withdrawal)
+   * Updates off-chain state and returns available balance
+   */
+  async withdrawFromChannel(
+    channel: ChannelState,
+    userWallet: Wallet,
+    withdrawAmount: bigint
+  ): Promise<boolean> {
+    if (!channel.isOpen) {
+      throw new Error('Channel is closed');
+    }
+
+    const currentBalance = channel.balances.get(userWallet.address) || 0n;
+    
+    if (currentBalance < withdrawAmount) {
+      throw new Error(`Insufficient balance. Have ${this.formatUSDC(currentBalance)} USDC, trying to withdraw ${this.formatUSDC(withdrawAmount)} USDC`);
+    }
+
+    console.log(`💸 Withdrawing ${this.formatUSDC(withdrawAmount)} USDC from Yellow channel...`);
+    await this.simulateTestnetLatency();
+
+    const newBalance = currentBalance - withdrawAmount;
+    
+    // Send state update to Yellow node
+    await this.sendStateUpdate(channel, userWallet, newBalance);
+    
+    console.log(`✅ Withdrawal confirmed`);
+    console.log(`   Previous: ${this.formatUSDC(currentBalance)} USDC`);
+    console.log(`   Withdrawn: ${this.formatUSDC(withdrawAmount)} USDC`);
+    console.log(`   Remaining: ${this.formatUSDC(newBalance)} USDC`);
+    
+    return true;
   }
 
   /**

@@ -399,6 +399,96 @@ export class TradingEngine {
   }
 
   /**
+   * Deposit additional funds to channel
+   * Updates off-chain state via Yellow Network
+   */
+  async depositFunds(session: Session, depositAmount: bigint): Promise<TradeResult> {
+    const state = this.stateManager.getState(session.channelId);
+    if (!state) {
+      return { success: false, message: 'State not found' };
+    }
+
+    try {
+      // Update Yellow Network channel balance
+      await this.client.depositToChannel(
+        session.channel,
+        session.sessionWallet,
+        depositAmount
+      );
+
+      // Update local state
+      state.depositedAmount += depositAmount;
+      state.activeBalance += depositAmount;
+
+      const signature = await this.signStateUpdate(session, state);
+      this.stateManager.updateStateVersion(state, signature);
+
+      console.log(`✅ Deposited ${this.formatUSDC(depositAmount)} USDC`);
+      console.log(`   New active balance: ${this.formatUSDC(state.activeBalance)} USDC`);
+
+      return {
+        success: true,
+        message: 'Deposit successful',
+        cost: depositAmount,
+        newBalance: state.activeBalance
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  }
+
+  /**
+   * Withdraw funds from channel
+   * Updates off-chain state via Yellow Network
+   */
+  async withdrawFunds(session: Session, withdrawAmount: bigint): Promise<TradeResult> {
+    const state = this.stateManager.getState(session.channelId);
+    if (!state) {
+      return { success: false, message: 'State not found' };
+    }
+
+    if (state.activeBalance < withdrawAmount) {
+      return {
+        success: false,
+        message: `Insufficient balance. Have ${this.formatUSDC(state.activeBalance)} USDC, trying to withdraw ${this.formatUSDC(withdrawAmount)} USDC`
+      };
+    }
+
+    try {
+      // Update Yellow Network channel balance
+      await this.client.withdrawFromChannel(
+        session.channel,
+        session.sessionWallet,
+        withdrawAmount
+      );
+
+      // Update local state
+      state.activeBalance -= withdrawAmount;
+
+      const signature = await this.signStateUpdate(session, state);
+      this.stateManager.updateStateVersion(state, signature);
+
+      console.log(`✅ Withdrew ${this.formatUSDC(withdrawAmount)} USDC`);
+      console.log(`   Remaining balance: ${this.formatUSDC(state.activeBalance)} USDC`);
+
+      return {
+        success: true,
+        message: 'Withdrawal successful',
+        cost: withdrawAmount,
+        newBalance: state.activeBalance
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  }
+
+  /**
    * Get current state summary
    */
   getStateSummary(session: Session): object | null {

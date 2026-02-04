@@ -8,7 +8,7 @@
  * - Security boundaries
  */
 
-import { Wallet } from 'ethers';
+import { Wallet, HDNodeWallet } from 'ethers';
 import { YellowClient, ChannelState } from './client';
 
 export interface SessionConfig {
@@ -20,7 +20,7 @@ export interface SessionConfig {
 export interface Session {
   sessionId: string;
   channelId: string;
-  sessionWallet: Wallet;
+  sessionWallet: HDNodeWallet;  // Changed from Wallet to HDNodeWallet
   channel: ChannelState;
   config: SessionConfig;
   createdAt: number;

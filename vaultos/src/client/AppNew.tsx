@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import WalletConnect from './components/WalletConnect';
 import SessionManager from './components/SessionManager';
-import MarketList from './components/MarketList';
-import TradePanel from './components/TradePanel';
-import BalanceDisplay from './components/BalanceDisplay';
+import MarketListNew from './components/MarketListNew';
+import TradePanelNew from './components/TradePanelNew';
+import BalanceDisplayNew from './components/BalanceDisplayNew';
 
-const App = () => {
+const AppNew = () => {
   const [currentView, setCurrentView] = useState<'home' | 'markets' | 'trade'>('home');
 
   return (
@@ -19,7 +19,7 @@ const App = () => {
         <div className="sidebar">
           <WalletConnect />
           <SessionManager />
-          <BalanceDisplay />
+          <BalanceDisplayNew />
         </div>
 
         <div className="main-content">
@@ -81,8 +81,8 @@ const App = () => {
                 </div>
               </div>
             )}
-            {currentView === 'markets' && <MarketList />}
-            {currentView === 'trade' && <TradePanel />}
+            {currentView === 'markets' && <MarketListNew />}
+            {currentView === 'trade' && <TradePanelNew />}
           </div>
         </div>
       </div>
@@ -90,4 +90,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default AppNew;

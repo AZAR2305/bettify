@@ -410,4 +410,74 @@ router.post('/session/close', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /api/balance/deposit
+ * Deposit additional funds to active session
+ */
+router.post('/balance/deposit', async (req: Request, res: Response) => {
+  try {
+    const { sessionId, amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid deposit amount' });
+    }
+
+    const session = sessionManager.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found or expired' });
+    }
+
+    const depositBigInt = BigInt(Math.floor(amount * 1_000_000));
+    const result = await tradingEngine.depositFunds(session, depositBigInt);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.message });
+    }
+
+    res.json({
+      success: true,
+      deposited: amount,
+      newBalance: Number(result.newBalance!) / 1_000_000,
+      message: 'Funds deposited to Yellow Network channel'
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/balance/withdraw
+ * Withdraw funds from active session
+ */
+router.post('/balance/withdraw', async (req: Request, res: Response) => {
+  try {
+    const { sessionId, amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Invalid withdrawal amount' });
+    }
+
+    const session = sessionManager.getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found or expired' });
+    }
+
+    const withdrawBigInt = BigInt(Math.floor(amount * 1_000_000));
+    const result = await tradingEngine.withdrawFunds(session, withdrawBigInt);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.message });
+    }
+
+    res.json({
+      success: true,
+      withdrawn: amount,
+      remainingBalance: Number(result.newBalance!) / 1_000_000,
+      message: 'Funds withdrawn from Yellow Network channel'
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
