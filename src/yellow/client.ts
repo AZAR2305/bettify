@@ -55,7 +55,7 @@ export class YellowClient {
    * - Can be revoked at any time
    * - Reduces exposure of main wallet private key
    */
-  createSessionWallet(): Wallet {
+  createSessionWallet() {
     const sessionWallet = Wallet.createRandom();
     console.log(`🔑 Session wallet created: ${sessionWallet.address}`);
     return sessionWallet.connect(this.provider);
