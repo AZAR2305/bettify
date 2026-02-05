@@ -280,8 +280,7 @@ export class EnhancedYellowClient {
 
         const message = await createGetChannelsMessage(
             this.sessionSigner,
-            params?.wallet || this.account.address,
-            Date.now()
+            params?.wallet || this.account.address
         );
 
         return this.sendRequest('get_channels', message);
@@ -423,7 +422,11 @@ export class EnhancedYellowClient {
             // Create funded channel
             const txHash = await this.nitroliteClient.depositAndCreateChannel(
                 tokenAddress,
-                amount
+                amount,
+                {
+                    chain_id: baseSepolia.id,
+                    token: tokenAddress
+                }
             );
 
             console.log('✓ Channel created:', txHash);

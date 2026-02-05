@@ -30,15 +30,15 @@ async function main() {
         throw new Error('PRIVATE_KEY not found in environment');
     }
 
-    // Wallet 2: Second participant  
-    const privateKey2 = '0x251c2ccc0f55d5837809c93c9e775c8a7cd315a517fabbd52c794902a8a8bc36' as `0x${string}`;
+    // Wallet 2: Second participant (unique funded wallet)
+    const privateKey2 = '0xda0070b15b47038798ed1a39d087439b65f67cce33d02c7334cefef28cd205dc' as `0x${string}`;
     
     const wallet1 = privateKeyToAccount(privateKey1);
     const wallet2 = privateKeyToAccount(privateKey2);
 
     console.log('✓ Wallets initialized');
-    console.log(`  Wallet 1 (Creator): ${wallet1.address}`);
-    console.log(`  Wallet 2 (Participant): ${wallet2.address}`);
+    console.log(`  Wallet 1 (Creator):      ${wallet1.address}`);
+    console.log(`  Wallet 2 (Participant):  ${wallet2.address}`);
     console.log('  Protocol: NitroRPC/0.4\n');
 
     // Initialize client with main wallet
@@ -104,22 +104,20 @@ async function main() {
         console.log('   Duration: 7 days');
         console.log('   Initial YES odds: 65%');
         console.log('   Initial NO odds: 35%');
-        console.log('   Participants: 2 (using 2 separate addresses)');
-        console.log('   Total allocation: 10 USDC (consolidated)');
+        console.log('   Participants: 2 (unique funded wallets)');
+        console.log('   Allocation: 10 USDC per participant (20 USDC total)');
 
-        // Yellow requires 2+ unique addresses
-        // NOTE: The private key you provided generates your same main wallet address
-        // For this demo, we'll document that 2 unique funded wallets are needed
+        // Use 2 unique wallet addresses (both funded)
         const participants = [
-            wallet1.address,
-            wallet2.address,  // This will be the same as wallet1 unless you have a different private key
+            wallet1.address,  // 0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1
+            wallet2.address,  // 0x44D113bD4682EEcFC2D2E47949593b0501C3661f
         ];
 
-        console.log('\n💡 Prediction Market Requirements:');
-        console.log('   ✅ Minimum 2 participant addresses required');
-        console.log('   ✅ Each participant must have ytest.usd balance');
-        console.log('   ✅ Allocations consolidated for duplicate addresses');
-        console.log(`   📝 Current setup: ${participants.length} addresses, consolidated amount: 10 USDC\n`);
+        console.log('\n💡 App Session Setup:');
+        console.log('   ✅ 2 unique participant addresses');
+        console.log(`   📍 Participant 1: ${participants[0]}`);
+        console.log(`   📍 Participant 2: ${participants[1]}`);
+        console.log('   💰 Each deposits 10 USDC into shared app session\n');
 
         try {
             const market = await marketManager.createMarket({
@@ -128,7 +126,7 @@ async function main() {
                 durationMinutes: 60 * 24 * 7,  // 7 days
                 initialYesPrice: 0.65,
                 participants,
-                initialDeposit: 5_000_000n,  // 5 USDC per participant (10 total with consolidation, 6 decimals)
+                initialDeposit: 10_000_000n,  // 10 USDC per participant (20 total, 6 decimals)
                 token: usdcAsset.token
             });
 

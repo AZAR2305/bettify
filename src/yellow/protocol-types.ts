@@ -179,7 +179,7 @@ export interface AppSessionDefinition {
   participants: `0x${string}`[];
   weights: number[];        // Integer weights for each participant
   quorum: number;           // Percentage required for consensus (0-100)
-  challenge: number;        // Challenge period in seconds
+  challenge_duration: number;  // Challenge period in seconds (use 0 if no challenge)
   nonce?: number;           // Optional unique nonce for this session
 }
 

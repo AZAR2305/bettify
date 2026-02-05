@@ -159,13 +159,21 @@ export class PredictionMarketManager {
                 participants: params.participants,
                 weights,  // Weights now sum to exactly 100
                 quorum: 100,  // Require full consensus
-                challenge: 0,  // No challenge period
+                challenge_duration: 0,  // No challenge period (required parameter)
                 nonce: Date.now(),
             },
             allocations: initialAllocations,
         };
 
         const response = await this.client.createAppSession(appSessionParams);
+        
+        // Check for errors
+        if ('error' in response) {
+            console.error('❌ App session creation failed:', response.error);
+            throw new Error(`Failed to create app session: ${response.error}`);
+        }
+
+        console.log('✅ App session created:', response.app_session_id);
 
         // Store market
         const market: PredictionMarket = {

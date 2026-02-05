@@ -17,7 +17,7 @@ async function main() {
     }
 
     const mainWallet = privateKeyToAccount(mainPrivateKey);
-    const secondWallet = privateKeyToAccount('0x251c2ccc0f55d5837809c93c9e775c8a7cd315a517fabbd52c794902a8a8bc36' as `0x${string}`);
+    const secondWallet = privateKeyToAccount('0xda0070b15b47038798ed1a39d087439b65f67cce33d02c7334cefef28cd205dc' as `0x${string}`);
 
     console.log('Main Wallet:', mainWallet.address);
     console.log('Second Wallet:', secondWallet.address);
