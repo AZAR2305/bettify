@@ -2,7 +2,7 @@
  * Check Yellow Network wallet balances
  * 
  * Checks:
- * - Sepolia ETH (for gas)
+ * - Base Sepolia ETH (for gas)
  * - ytest.USD tokens (for deposits)
  * - Contract deployment status
  * 
@@ -48,13 +48,12 @@ async function main() {
   console.log(`\n📍 Wallet: ${walletAddress}\n`);
 
   const client = createPublicClient({
-    chain: sepolia,
-    transport: http('https://1rpc.io/sepolia'),
-  });
+        chain: baseSepolia,
+        transport: http('https://sepolia.base.org'),
 
   try {
-    // Check Sepolia ETH balance
-    console.log('⏳ Checking Sepolia ETH...');
+    // Check Base Sepolia ETH balance
+    console.log('⏳ Checking Base Sepolia ETH...');
     const ethBalance = await client.getBalance({ address: walletAddress });
     const ethFormatted = formatEther(ethBalance);
     
@@ -123,10 +122,9 @@ async function main() {
       console.log('⚠️  NOT READY - Need:\n');
       
       if (!hasETH) {
-        console.log('   ❌ Sepolia ETH (for gas)');
-        console.log('      Get from: https://sepoliafaucet.com/');
-        console.log('      OR: https://www.alchemy.com/faucets/ethereum-sepolia');
-        console.log('      OR: https://sepolia-faucet.pk910.de/');
+        console.log('   ❌ Base Sepolia ETH (for gas)');
+        console.log('      Get from: https://www.alchemy.com/faucets/base-sepolia');
+        console.log('      OR: https://bridge.base.org/deposit');
       }
       
       if (!hasTokens) {
@@ -138,7 +136,7 @@ async function main() {
       
       if (!contractOK) {
         console.log('   ❌ Yellow Network contracts not found');
-        console.log('      Check if using correct network (Sepolia)');
+        console.log('      Check if using correct network (Base Sepolia, Chain ID: 84532)');
       }
       
       console.log();

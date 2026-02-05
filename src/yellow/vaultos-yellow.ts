@@ -8,7 +8,7 @@
  * - Off-chain transfers
  * - Channel closing and withdrawal
  * 
- * Testnet: Yellow Sandbox (Sepolia)
+ * Testnet: Yellow Sandbox (Base Sepolia)
  */
 
 import {
@@ -29,7 +29,7 @@ import {
     type RPCAsset,
 } from '@erc7824/nitrolite';
 import { createPublicClient, createWalletClient, http } from 'viem';
-import { sepolia } from 'viem/chains';
+import { baseSepolia } from 'viem/chains';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import WebSocket from 'ws';
 import 'dotenv/config';
@@ -59,12 +59,12 @@ export class VaultOSYellowClient {
 
         // Create viem clients
         this.publicClient = createPublicClient({
-            chain: sepolia,
-            transport: http('https://1rpc.io/sepolia'),
+            chain: baseSepolia,
+            transport: http('https://sepolia.base.org'),
         });
 
         this.walletClient = createWalletClient({
-            chain: sepolia,
+            chain: baseSepolia,
             transport: http(),
             account: this.account,
         });
@@ -78,7 +78,7 @@ export class VaultOSYellowClient {
                 custody: '0x019B65A265EB3363822f2752141b3dF16131b262',
                 adjudicator: '0x7c7ccbc98469190849BCC6c926307794fDfB11F2',
             },
-            chainId: sepolia.id,
+            chainId: baseSepolia.id,
             challengeDuration: 3600n, // 1 hour
         });
 
@@ -230,8 +230,8 @@ export class VaultOSYellowClient {
         // Create fresh wallet client with EOA account
         const eoaWalletClient = createWalletClient({
             account: this.account,
-            chain: sepolia,
-            transport: http('https://1rpc.io/sepolia'),
+            chain: baseSepolia,
+            transport: http('https://sepolia.base.org'),
         });
         
         // Auth params for EIP-712 signature (NO address field here!)
@@ -299,54 +299,77 @@ export class VaultOSYellowClient {
      * No WS create_channel message needed!
      */
     async createChannel(): Promise<void> {
-        // Step 1: Find ytest.USD asset and read decimals from config
-        const asset = this.config.assets?.find(
-            (a: any) => a.chain_id === sepolia.id && a.symbol === 'ytest.usd'
-        );
+        try {
+            // Step 1: Find ytest.USD asset and read decimals from config
+            const asset = this.config.assets?.find(
+                (a: any) => a.chain_id === baseSepolia.id && a.symbol === 'ytest.usd'
+            );
 
-        if (!asset) {
-            throw new Error('ytest.usd not found in Yellow config');
+            if (!asset) {
+                throw new Error('ytest.usd not found in Yellow config');
+            }
+            
+            const tokenAddress = asset.token as `0x${string}`;
+            const decimals = BigInt(asset.decimals);
+            const depositAmount = 20n * (10n ** decimals); // Use 20 USDC to match ledger balance
+
+            console.log('💰 Token:', tokenAddress);
+            console.log('💰 Decimals:', decimals.toString());
+            console.log('💰 Deposit amount:', depositAmount.toString());
+
+            // Step 2: Approve custody contract to spend tokens
+            console.log('💳 Approving custody contract...');
+            const custodyAddress = this.nitroliteClient.addresses.custody;
+            
+            const approvalHash = await this.walletClient.writeContract({
+                address: tokenAddress,
+                abi: [
+                    {
+                        name: 'approve',
+                        type: 'function',
+                        stateMutability: 'nonpayable',
+                        inputs: [
+                            { name: 'spender', type: 'address' },
+                            { name: 'amount', type: 'uint256' }
+                        ],
+                        outputs: [{ type: 'bool' }]
+                    }
+                ],
+                functionName: 'approve',
+                args: [custodyAddress, depositAmount],
+                account: this.account,
+                chain: baseSepolia,
+            });
+
+            console.log('✓ Approval sent:', approvalHash);
+            console.log('⏳ Waiting for approval confirmation...');
+            
+            await this.publicClient.waitForTransactionReceipt({ hash: approvalHash });
+            console.log('✓ Approval confirmed');
+
+            // Step 3: Create funded channel (NO manual state building needed!)
+            console.log('💰 Creating funded channel...');
+            const txHash = await this.nitroliteClient.depositAndCreateChannel(
+                tokenAddress,
+                depositAmount
+            );
+
+            console.log('✓ Channel created on-chain:', txHash);
+
+            await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+            console.log('✓ Channel LIVE & FUNDED');
+            console.log(`✓ Balance: ${depositAmount / (10n ** decimals)} ytest.USD`);
+
+        } catch (error: any) {
+            if (error.message?.includes('insufficient') || error.message?.includes('balance')) {
+                console.log('\n⚠️  Need tokens to create channel');
+                console.log('   Wallet:', this.account.address);
+                console.log('   Faucet: curl -X POST https://clearnet-sandbox.yellow.com/faucet/requestTokens \\');
+                console.log(`           -H "Content-Type: application/json" -d '{"userAddress":"${this.account.address}"}'`);
+            } else {
+                console.error('❌ Channel creation error:', error.message);
+            }
         }
-        
-        const tokenAddress = asset.token as `0x${string}`;
-        const decimals = BigInt(asset.decimals);
-        const depositAmount = 20n * (10n ** decimals);
-
-        console.log('💰 Creating channel with', depositAmount.toString(), 'tokens');
-
-        // Step 2: Approve custody contract to spend tokens
-        const custodyAddress = this.nitroliteClient.addresses.custody;
-        
-        const approvalHash = await this.walletClient.writeContract({
-            address: tokenAddress,
-            abi: [
-                {
-                    name: 'approve',
-                    type: 'function',
-                    stateMutability: 'nonpayable',
-                    inputs: [
-                        { name: 'spender', type: 'address' },
-                        { name: 'amount', type: 'uint256' }
-                    ],
-                    outputs: [{ type: 'bool' }]
-                }
-            ],
-            functionName: 'approve',
-            args: [custodyAddress, depositAmount],
-            account: this.account,
-            chain: sepolia,
-        });
-
-        await this.publicClient.waitForTransactionReceipt({ hash: approvalHash });
-
-        // Step 3: Create funded channel
-        const txHash = await this.nitroliteClient.depositAndCreateChannel(
-            tokenAddress,
-            depositAmount
-        );
-
-        await this.publicClient.waitForTransactionReceipt({ hash: txHash });
-        console.log('✓ Channel created:', txHash);
     }
 
     /**

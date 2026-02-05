@@ -12,7 +12,7 @@
  * - Cannot create channel with 0 balance (protocol requirement)
  * 
  * Requirements for full test:
- * - Sepolia ETH (for gas) - get from https://sepoliafaucet.com/
+ * - Base Sepolia ETH (for gas) - get from https://www.alchemy.com/faucets/base-sepolia
  * - ytest.USD tokens (for deposit) - get from Yellow faucet
  * 
  * Usage: npm run test:yellow
@@ -53,7 +53,7 @@ async function main() {
       console.log('   Status: LIVE and funded with 100 USDC');
     } else {
       console.log('\n⚠️  Channel not created yet');
-      console.log('   Reason: Wallet needs Sepolia ETH + ytest.USD tokens');
+      console.log('   Reason: Wallet needs Base Sepolia ETH + ytest.USD tokens');
     }
 
     console.log('\n' + '='.repeat(60));
@@ -79,7 +79,7 @@ async function main() {
     
     if (!channelId) {
       console.log('\n📝 To complete on-chain channel creation:');
-      console.log('   1. Get Sepolia ETH: https://sepoliafaucet.com/');
+      console.log('   1. Get Base Sepolia ETH: https://www.alchemy.com/faucets/base-sepolia');
       console.log('   2. Get ytest.USD tokens:');
       console.log('      curl -X POST https://clearnet-sandbox.yellow.com/faucet/requestTokens \\');
       console.log(`        -H "Content-Type: application/json" \\`);
@@ -93,7 +93,7 @@ async function main() {
     console.error('\n❌ Error:', error.message);
     if (error.message.includes('insufficient') || error.message.includes('balance')) {
       console.log('\n💡 This is expected! The wallet needs:');
-      console.log('   - Sepolia ETH (for gas fees)');
+      console.log('   - Base Sepolia ETH (for gas fees)');
       console.log('   - ytest.USD tokens (for channel deposit)');
       console.log('\n   The SDK integration is working correctly.');
       console.log('   Yellow Network requires funded channels - this is by design!');
