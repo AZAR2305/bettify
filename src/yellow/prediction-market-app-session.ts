@@ -113,12 +113,26 @@ export class PredictionMarketManager {
         const marketId = this.generateMarketId();
         const creator = this.client.getAddress();
 
-        // Create initial allocations (equal split)
-        const initialAllocations: StateAllocation[] = params.participants.map(participant => ({
-            participant,
-            token: params.token,
-            amount: params.initialDeposit.toString(),
-        }));
+        // Create initial allocations
+        // Note: Yellow expects asset symbol (e.g., 'ytest.usd'), not token address
+        // For duplicate participants (same address), consolidate into one allocation
+        const assetSymbol = 'ytest.usd';
+        
+        // Group allocations by unique participant address
+        const allocationMap = new Map<string, bigint>();
+        for (const participant of params.participants) {
+            const current = allocationMap.get(participant) || 0n;
+            allocationMap.set(participant, current + params.initialDeposit);
+        }
+        
+        // Create unique allocations (one per unique address)
+        const initialAllocations: StateAllocation[] = Array.from(allocationMap.entries()).map(
+            ([participant, amount]) => ({
+                participant: participant as `0x${string}`,
+                asset: assetSymbol,
+                amount: amount.toString(),
+            })
+        );
 
         // Encode market data
         const marketData = this.encodeMarketData({
@@ -129,12 +143,21 @@ export class PredictionMarketManager {
 
         // Create app session
         console.log('\n📊 Creating prediction market app session...');
+        
+        // Calculate integer weights that sum to exactly 100
+        const numParticipants = params.participants.length;
+        const baseWeight = Math.floor(100 / numParticipants);
+        const remainder = 100 - (baseWeight * numParticipants);
+        const weights = params.participants.map((_, i) => 
+            i < remainder ? baseWeight + 1 : baseWeight
+        );
+        
         const appSessionParams: CreateAppSessionParams = {
             definition: {
-                application: 'prediction-markets',
+                application: 'Yellow',  // Must match auth session application
                 protocol: 'NitroRPC/0.4',
                 participants: params.participants,
-                weights: params.participants.map(() => Math.floor(100 / params.participants.length)),  // Integer weights
+                weights,  // Weights now sum to exactly 100
                 quorum: 100,  // Require full consensus
                 challenge: 0,  // No challenge period
                 nonce: Date.now(),

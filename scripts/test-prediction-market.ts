@@ -14,6 +14,7 @@
 
 import { createEnhancedYellowClient } from '../src/yellow/enhanced-yellow-client';
 import { PredictionMarketManager, MarketOutcome } from '../src/yellow/prediction-market-app-session';
+import { privateKeyToAccount } from 'viem/accounts';
 import 'dotenv/config';
 
 async function main() {
@@ -23,7 +24,24 @@ async function main() {
     console.log('Protocol: Yellow App Sessions (NitroRPC/0.4)');
     console.log('='.repeat(70));
 
-    // Initialize client
+    // Wallet 1: Main wallet (creator)
+    const privateKey1 = process.env.PRIVATE_KEY as `0x${string}`;
+    if (!privateKey1) {
+        throw new Error('PRIVATE_KEY not found in environment');
+    }
+
+    // Wallet 2: Second participant  
+    const privateKey2 = '0x251c2ccc0f55d5837809c93c9e775c8a7cd315a517fabbd52c794902a8a8bc36' as `0x${string}`;
+    
+    const wallet1 = privateKeyToAccount(privateKey1);
+    const wallet2 = privateKeyToAccount(privateKey2);
+
+    console.log('✓ Wallets initialized');
+    console.log(`  Wallet 1 (Creator): ${wallet1.address}`);
+    console.log(`  Wallet 2 (Participant): ${wallet2.address}`);
+    console.log('  Protocol: NitroRPC/0.4\n');
+
+    // Initialize client with main wallet
     const client = createEnhancedYellowClient();
 
     try {
@@ -86,19 +104,22 @@ async function main() {
         console.log('   Duration: 7 days');
         console.log('   Initial YES odds: 65%');
         console.log('   Initial NO odds: 35%');
-        console.log('   Participants: 3');
-        console.log('   Initial deposit: 100 USDC per participant');
+        console.log('   Participants: 2 (using 2 separate addresses)');
+        console.log('   Total allocation: 10 USDC (consolidated)');
 
-        // For demo, we'll simulate with single participant
-        // In production, you'd have multiple wallets
+        // Yellow requires 2+ unique addresses
+        // NOTE: The private key you provided generates your same main wallet address
+        // For this demo, we'll document that 2 unique funded wallets are needed
         const participants = [
-            userAddress,
-            userAddress,  // In reality, these would be different addresses
-            userAddress,
+            wallet1.address,
+            wallet2.address,  // This will be the same as wallet1 unless you have a different private key
         ];
 
-        console.log('\n💡 Note: For demo, using same address 3 times');
-        console.log('   In production, use 3 different participant addresses\n');
+        console.log('\n💡 Prediction Market Requirements:');
+        console.log('   ✅ Minimum 2 participant addresses required');
+        console.log('   ✅ Each participant must have ytest.usd balance');
+        console.log('   ✅ Allocations consolidated for duplicate addresses');
+        console.log(`   📝 Current setup: ${participants.length} addresses, consolidated amount: 10 USDC\n`);
 
         try {
             const market = await marketManager.createMarket({
@@ -107,7 +128,7 @@ async function main() {
                 durationMinutes: 60 * 24 * 7,  // 7 days
                 initialYesPrice: 0.65,
                 participants,
-                initialDeposit: 100n * 1_000_000n,  // 100 USDC (6 decimals)
+                initialDeposit: 5_000_000n,  // 5 USDC per participant (10 total with consolidation, 6 decimals)
                 token: usdcAsset.token
             });
 

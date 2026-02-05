@@ -546,7 +546,7 @@ export class EnhancedYellowClient {
             timestamp
         );
 
-        return this.sendRequest('create_app_session', message);
+        return this.sendRequest('create_app_session', message, reqId);
     }
 
     /**
@@ -652,7 +652,6 @@ export class EnhancedYellowClient {
         this.ws.on('message', async (data) => {
             try {
                 const response = JSON.parse(data.toString());
-                console.log('📨 Received:', JSON.stringify(response, null, 2));
 
                 // Handle errors
                 if (response.error) {
@@ -720,17 +719,18 @@ export class EnhancedYellowClient {
     /**
      * Send RPC request and wait for response
      */
-    private sendRequest(method: string, message: string): Promise<any> {
+    private sendRequest(method: string, message: string, preformattedRequestId?: number): Promise<any> {
         return new Promise((resolve, reject) => {
             if (!this.ws) {
                 reject(new Error('Not connected'));
                 return;
             }
 
-            const reqId = this.requestId++;
+            // Use pre-formatted requestId if provided (from nitrolite SDK)
+            // Otherwise generate our own
+            const reqId = preformattedRequestId !== undefined ? preformattedRequestId : this.requestId++;
             this.pendingRequests.set(reqId, { resolve, reject, method });
 
-            console.log(`📤 [${method}] Sending:`, message);
             this.ws.send(message);
 
             // Timeout after 30 seconds

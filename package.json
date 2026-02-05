@@ -18,6 +18,7 @@
     "test:market": "tsx scripts/test-market-service.ts",
     "check:balance": "tsx scripts/check-balance.ts",
     "check:yellow": "tsx scripts/get-ytest-balance.ts",
+    "transfer:demo": "tsx scripts/transfer-for-demo.ts",
     "debug:auth": "tsx scripts/debug-auth.ts",
     "yellow:docs": "echo 'Yellow Network Docs: https://docs.yellow.org' && start https://docs.yellow.org"
   },

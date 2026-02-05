@@ -38,7 +38,7 @@ export type ChannelStatus = 'open' | 'resizing' | 'closing' | 'challenged' | 'cl
  */
 export interface StateAllocation {
   participant: `0x${string}`;  // Participant wallet address
-  token: `0x${string}`;        // Token contract address
+  asset: string;               // Asset symbol (e.g., "ytest.usd", "eth")
   amount: string;              // Amount in smallest unit (e.g., "100000000" for 100 USDC with 6 decimals)
 }
 
