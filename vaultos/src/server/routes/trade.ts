@@ -47,7 +47,7 @@ router.post('/execute', async (req, res) => {
         // Execute trade (AUTHORITATIVE backend calculation)
         const trade = await MarketService.executeTrade({
             marketId,
-            userAddress: session.accountAddress,
+            userAddress: session.walletAddress,
             outcome,
             amount,
             maxSlippage,

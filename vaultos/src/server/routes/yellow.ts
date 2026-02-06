@@ -220,4 +220,91 @@ router.get('/balance', async (req, res) => {
     }
 });
 
+/**
+ * Request testnet tokens from Yellow Network faucet
+ * POST /api/yellow/request-faucet
+ */
+router.post('/request-faucet', async (req, res) => {
+    const { address } = req.body;
+
+    if (!address) {
+        return res.status(400).json({ error: 'address required' });
+    }
+
+    try {
+        console.log(`💰 Requesting testnet tokens for ${address}...`);
+
+        const response = await fetch('https://earn-ynetwork.yellownetwork.io/api/faucet', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                address: address,
+                chain_id: CHAIN_ID,
+                token: 'ytest.usd',
+            }),
+        });
+
+        const contentType = response.headers.get('content-type');
+        const isJson = contentType && contentType.includes('application/json');
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Faucet returned ${response.status}:`, errorText);
+            throw new Error(`Faucet API unavailable (status ${response.status})`);
+        }
+
+        // Check if response is actually JSON
+        if (!isJson) {
+            const htmlResponse = await response.text();
+            console.error('❌ Faucet returned HTML instead of JSON');
+            console.log('Response preview:', htmlResponse.substring(0, 200));
+            throw new Error('Faucet API format changed - use manual method');
+        }
+
+        const data = await response.json();
+        console.log('✅ Faucet request successful:', data);
+
+        res.json({
+            success: true,
+            message: 'Tokens requested successfully! Wait 1-2 minutes for delivery.',
+            data,
+            instructions: {
+                checkBalance: 'Refresh your wallet to see the tokens',
+                amount: 'You should receive testnet ytest.USD tokens',
+                time: 'Usually arrives within 1-2 minutes'
+            }
+        });
+    } catch (error: any) {
+        console.error('❌ Faucet request error:', error.message);
+        
+        // Return helpful error with manual alternatives
+        res.status(200).json({
+            success: false,
+            error: 'Automatic faucet unavailable',
+            message: 'Please use the manual faucet instead',
+            alternatives: [
+                {
+                    method: 'Web Interface',
+                    url: 'https://earn-ynetwork.yellownetwork.io',
+                    steps: [
+                        `1. Visit: https://earn-ynetwork.yellownetwork.io`,
+                        `2. Paste your wallet: ${address}`,
+                        '3. Select: Base Sepolia',
+                        'Select token: ytest.usd',
+                        'Click "Request Tokens"'
+                    ]
+                },
+                {
+                    method: 'Base Sepolia ETH Faucet',
+                    url: 'https://www.alchemy.com/faucets/base-sepolia',
+                    note: 'Get ETH for gas fees'
+                }
+            ]
+        });
+    }
+});
+
 export default router;

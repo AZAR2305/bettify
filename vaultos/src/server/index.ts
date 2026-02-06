@@ -46,8 +46,5 @@ app.listen(PORT, () => {
   console.log(`⚡ Yellow Network integration active`);
   console.log(`📊 LMSR AMM prediction markets ready`);
 });
-  console.log(`📡 Yellow Network integration active`);
-  console.log(`💼 Wallet-based sessions enabled`);
-});
 
 export default app;

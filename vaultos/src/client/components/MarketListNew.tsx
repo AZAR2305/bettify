@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import { useYellowNetwork } from '../hooks/useYellowNetwork';
 
 interface Market {
   id: string;
-  appSessionId: string; // Yellow Network app session ID - CRITICAL!
   question: string;
   description: string;
   yesPool: number;
@@ -18,7 +16,10 @@ interface Market {
 
 const MarketListNew: React.FC = () => {
   const { address, isConnected } = useAccount();
-  const { connected: yellowConnected, authenticated, createAppSession, balances } = useYellowNetwork();
+  
+  // 🔒 ADMIN-ONLY: Only admin wallet can create markets
+  const ADMIN_WALLET = '0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1';
+  const isAdmin = address?.toLowerCase() === ADMIN_WALLET.toLowerCase();
   
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,11 +28,22 @@ const MarketListNew: React.FC = () => {
     question: '',
     description: '',
     durationMinutes: 30,
-    initialLiquidity: 10, // USDC to allocate to app session
+    initialLiquidity: 100, // USDC for market liquidity
   });
   const [showCreate, setShowCreate] = useState(false);
+  const [session, setSession] = useState<any>(null);
 
-  // Real-time market updates every 5 seconds
+  // Load session from localStorage
+  useEffect(() => {
+    if (address) {
+      const sessionData = localStorage.getItem(`session_${address}`);
+      if (sessionData) {
+        setSession(JSON.parse(sessionData));
+      }
+    }
+  }, [address]);
+
+  // Load markets
   useEffect(() => {
     loadMarkets();
     const interval = setInterval(loadMarkets, 5000);
@@ -41,7 +53,7 @@ const MarketListNew: React.FC = () => {
   const loadMarkets = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/markets');
+      const response = await fetch('http://localhost:3000/api/market');
       if (response.ok) {
         const data = await response.json();
         setMarkets(data.markets || []);
@@ -54,60 +66,62 @@ const MarketListNew: React.FC = () => {
   };
 
   const createMarket = async () => {
-    if (!newMarket.question) {
+    if (!newMarket.question.trim()) {
       alert('Please enter a question');
       return;
     }
 
-    if (!yellowConnected || !authenticated) {
-      alert('Please connect to Yellow Network first');
+    if (!isAdmin) {
+      alert('Only admin wallet can create markets');
       return;
     }
 
-    // Check sufficient balance
-    const usdcBalance = balances.find(b => b.asset === 'ytest.usd')?.balance || 0;
-    if (usdcBalance < newMarket.initialLiquidity) {
-      alert(`Insufficient balance. You have ${usdcBalance} USDC, need ${newMarket.initialLiquidity} USDC`);
+    if (!session) {
+      alert('Please create a Yellow Network session first (see sidebar)');
+      return;
+    }
+
+    if (!address) {
+      alert('Please connect your wallet');
       return;
     }
 
     setCreating(true);
     try {
-      // Step 1: Create Yellow Network app session
-      console.log('🔄 Creating Yellow Network app session...');
-      const appSessionId = await createAppSession({
-        marketName: newMarket.question,
-        initialLiquidity: newMarket.initialLiquidity,
-      });
-      console.log(`✅ App session created: ${appSessionId}`);
-
-      // Step 2: Store market in backend with app session ID
       const marketData = {
-        ...newMarket,
-        appSessionId, // ← CRITICAL: Store the Yellow session ID
+        question: newMarket.question,
+        description: newMarket.description,
+        durationMinutes: newMarket.durationMinutes,
+        initialLiquidity: newMarket.initialLiquidity,
+        sessionId: session.sessionId,
+        channelId: session.channelId,
         creatorAddress: address,
       };
 
-      const response = await fetch('/api/market/create', {
+      console.log('Creating market:', marketData);
+
+      const response = await fetch('http://localhost:3000/api/market/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(marketData),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        alert(`Market created successfully! Session ID: ${appSessionId}`);
+        alert(`Market created successfully!`);
         setNewMarket({ 
           question: '', 
           description: '', 
           durationMinutes: 30, 
-          initialLiquidity: 10 
+          initialLiquidity: 100,
         });
         setShowCreate(false);
-        loadMarkets(); // Refresh market list
+        loadMarkets();
       } else {
-        throw new Error('Failed to store market in database');
+        throw new Error(data.error || 'Failed to create market');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating market:', err);
       alert(`Failed to create market: ${err.message}`);
     } finally {
@@ -119,22 +133,28 @@ const MarketListNew: React.FC = () => {
     <div className="market-list">
       <div className="market-header">
         <div>
-          <h2>📊 Prediction Markets</h2>
-          {yellowConnected && authenticated && (
+          <h2>Prediction Markets</h2>
+          {session && (
             <div className="yellow-status">
-              ✅ Connected to Yellow Network | Balance: {balances.find(b => b.asset === 'ytest.usd')?.balance.toFixed(2) || '0'} USDC
+              Session: {session.sessionId.slice(0, 12)}... | Balance: {session.depositAmount} USDC
             </div>
           )}
-          {!yellowConnected && <div className="yellow-status">🔄 Connecting to Yellow Network...</div>}
-          {yellowConnected && !authenticated && <div className="yellow-status">🔑 Authenticating...</div>}
+          {!session && <div className="yellow-status">Create a session in sidebar to start</div>}
         </div>
-        <button 
-          className="btn btn-primary"
-          onClick={() => setShowCreate(!showCreate)}
-          disabled={!authenticated || creating}
-        >
-          {showCreate ? 'Cancel' : '➕ Create Market'}
-        </button>
+        {isAdmin && (
+          <button 
+            className="btn btn-primary"
+            onClick={() => setShowCreate(!showCreate)}
+            disabled={!session || creating}
+          >
+            {showCreate ? 'Cancel' : 'Create Market (Admin)'}
+          </button>
+        )}
+        {!isAdmin && (
+          <div className="admin-only-notice" style={{ color: '#FFD700', fontSize: '14px' }}>
+            Only admin can create markets
+          </div>
+        )}
       </div>
 
       {showCreate && (
@@ -177,14 +197,14 @@ const MarketListNew: React.FC = () => {
                 type="number"
                 value={newMarket.initialLiquidity}
                 onChange={(e) => setNewMarket({ ...newMarket, initialLiquidity: parseFloat(e.target.value) })}
-                min="1"
-                step="1"
+                min="10"
+                step="10"
                 className="input"
               />
             </div>
           </div>
           <button onClick={createMarket} className="btn btn-primary" disabled={creating}>
-            {creating ? '🔄 Creating...' : '🚀 Create Market'}
+            {creating ? 'Creating...' : 'Create Market'}
           </button>
         </div>
       )}
@@ -205,17 +225,15 @@ const MarketListNew: React.FC = () => {
             
             return (
               <div key={market.id} className={`market-card ${market.status}`}>
-                {/* Status Badge */}
                 <div className="market-status">
-                  {market.status === 'open' && '🟢 Open'}
-                  {market.status === 'closed' && '🟡 Closed'}
-                  {market.status === 'resolved' && '🔵 Resolved'}
+                  {market.status === 'open' && 'Open'}
+                  {market.status === 'closed' && 'Closed'}
+                  {market.status === 'resolved' && 'Resolved'}
                 </div>
 
                 <h3>{market.question}</h3>
                 <p className="market-description">{market.description}</p>
                 
-                {/* Pool Information */}
                 <div className="pool-info">
                   <div className="total-pool">
                     <span className="label">Total Pool</span>
@@ -236,22 +254,18 @@ const MarketListNew: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Odds Bar */}
                 <div className="odds-bar">
                   <div className="yes-bar" style={{ width: `${odds.yes}%` }} />
                   <div className="no-bar" style={{ width: `${odds.no}%` }} />
                 </div>
 
                 <div className="market-info">
-                  <span>⏱️ Ends: {new Date(market.endTime).toLocaleTimeString()}</span>
-                  <span className="session-id" title={market.appSessionId}>
-                    📡 Session: {market.appSessionId?.slice(0, 8) || 'N/A'}...
-                  </span>
+                  <span>Ends: {new Date(market.endTime).toLocaleTimeString()}</span>
                 </div>
                 
                 {market.status === 'resolved' && (
                   <div className="outcome">
-                    ✅ Outcome: <strong>{market.outcome}</strong>
+                    Outcome: <strong>{market.outcome}</strong>
                   </div>
                 )}
                 

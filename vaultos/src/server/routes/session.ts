@@ -5,14 +5,21 @@ const router = Router();
 const sessionService = new SessionService();
 
 // Create a new trading session with wallet address
+// Accepts optional existingChannelId to resume channel after page reload
 router.post('/create', async (req, res) => {
-    const { walletAddress, depositAmount } = req.body;
+    const { walletAddress, depositAmount, existingChannelId } = req.body;
     try {
         if (!walletAddress) {
             return res.status(400).json({ error: 'Wallet address required' });
         }
         
-        const session = await sessionService.createSession(walletAddress, depositAmount);
+        // Pass existingChannelId for channel recovery
+        const session = await sessionService.createSession(
+            walletAddress, 
+            depositAmount, 
+            existingChannelId
+        );
+        
         res.status(201).json({ success: true, session });
     } catch (error: any) {
         res.status(500).json({ error: error.message });

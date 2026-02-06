@@ -34,41 +34,70 @@ export class SessionService {
   /**
    * Create a new Yellow Network session
    * 
+   * CRITICAL DISTINCTION:
+   * - SESSION KEY: Ephemeral, regenerated on reload
+   * - CHANNEL: Persistent, on-chain + off-chain state
+   * 
    * Steps:
    * 1. Create VaultOSYellowClient instance
-   * 2. Connect and authenticate with Yellow Network
-   * 3. Channel is auto-created by SDK
-   * 4. Fund channel with initial deposit
+   * 2. Connect and authenticate (generates NEW session key)
+   * 3. Query for existing channels (resume if found)
+   * 4. Create new channel only if none exists
+   * 5. Fund/resize channel if needed
    * 
    * @param walletAddress - User's Ethereum address
    * @param depositAmount - Initial deposit in USDC (will be converted to ytest.USD)
+   * @param existingChannelId - Optional channel ID to resume after reload
    * @returns Session data with channel ID and addresses
    */
-  async createSession(walletAddress: string, depositAmount: number): Promise<SessionData> {
+  async createSession(
+    walletAddress: string, 
+    depositAmount: number,
+    existingChannelId?: string | null
+  ): Promise<SessionData> {
     console.log(`🟡 Creating Yellow Network session for ${walletAddress}`);
     console.log(`   Initial deposit: ${depositAmount} USDC`);
+    if (existingChannelId) {
+      console.log(`   🔄 Attempting to resume channel: ${existingChannelId}`);
+    }
 
     // Create Yellow Network client
     const yellowClient = createVaultOSYellowClient();
 
     try {
       // Connect and authenticate with Yellow Network
+      // This generates a NEW session key (ephemeral)
       const { sessionAddress, userAddress } = await yellowClient.connect();
       
       console.log(`✅ Connected to Yellow Network`);
       console.log(`   User: ${userAddress}`);
       console.log(`   Session: ${sessionAddress}`);
 
-      // Fund the channel with initial deposit
-      await yellowClient.resizeChannel(depositAmount.toString());
-      console.log(`✅ Channel funded with ${depositAmount} ytest.USD`);
+      // Check for existing channel via Yellow SDK
+      const channelId = yellowClient.getChannelId();
+      
+      if (channelId) {
+        console.log(`✅ Resumed existing channel: ${channelId}`);
+        console.log(`   Channel persists across session reloads`);
+      } else if (existingChannelId) {
+        console.log(`⚠️  Stored channel ${existingChannelId} not found - may have expired`);
+        console.log(`   Creating new channel...`);
+      } else {
+        console.log(`🆕 No existing channel found - creating new one`);
+      }
 
-      // Generate session ID
+      // Fund/resize channel (creates if doesn't exist)
+      await yellowClient.resizeChannel(depositAmount.toString());
+      const finalChannelId = yellowClient.getChannelId() || existingChannelId || 'pending';
+      console.log(`✅ Channel funded with ${depositAmount} ytest.USD`);
+      console.log(`   Channel ID: ${finalChannelId}`);
+
+      // Generate NEW session ID (ephemeral)
       const sessionId = `session_${Date.now()}_${walletAddress.slice(0, 8)}`;
 
       const sessionData: SessionData = {
         sessionId,
-        channelId,
+        channelId: finalChannelId,
         walletAddress,
         sessionAddress,
         depositAmount: depositAmount.toString(),

@@ -6,23 +6,36 @@ const router = Router();
 // Route to create a new prediction market
 router.post('/create', async (req, res) => {
     try {
-        const { appSessionId, question, description, durationMinutes, initialLiquidity, creatorAddress } = req.body;
+        const { sessionId, channelId, question, description, durationMinutes, initialLiquidity, creatorAddress } = req.body;
         
-        if (!appSessionId || !question || !creatorAddress) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        console.log('Market creation request:', req.body);
+        
+        if (!question || !creatorAddress) {
+            return res.status(400).json({ error: 'Missing required fields: question and creatorAddress' });
+        }
+
+        // 🔒 ADMIN-ONLY: Only admin wallet can create markets
+        const ADMIN_WALLET = '0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1';
+        if (creatorAddress.toLowerCase() !== ADMIN_WALLET.toLowerCase()) {
+            return res.status(403).json({ 
+                error: 'Unauthorized: Only admin can create markets',
+                adminWallet: ADMIN_WALLET
+            });
         }
 
         const market = await marketService.createMarket({
-            appSessionId,
+            appSessionId: sessionId || channelId || 'session_' + Date.now(), // Use sessionId or channelId
             question,
-            description,
+            description: description || '',
             durationMinutes: parseInt(durationMinutes) || 30,
-            initialLiquidity: parseFloat(initialLiquidity) || 10,
+            initialLiquidity: parseFloat(initialLiquidity) || 100,
             creatorAddress,
         });
         
+        console.log('Market created successfully:', market.id);
         res.status(201).json(market);
     } catch (error) {
+        console.error('Error creating market:', error);
         res.status(500).json({ error: error.message });
     }
 });
