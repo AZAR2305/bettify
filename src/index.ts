@@ -13,7 +13,11 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import marketRoutes from './api/marketRoutes';
+import sessionRoutes from '../vaultos/src/server/routes/session';
+import marketRoutes from '../vaultos/src/server/routes/market';
+import tradeRoutes from '../vaultos/src/server/routes/trade';
+import yellowRoutes from '../vaultos/src/server/routes/yellow';
+import balanceRoutes from '../vaultos/src/server/routes/balance';
 
 // Load environment variables
 dotenv.config();
@@ -30,21 +34,30 @@ app.get('/', (req, res) => {
   res.json({
     name: 'VaultOS',
     version: '1.0.0',
-    phase: 'Phase 1 - Yellow Network Integration',
     status: 'operational',
     features: [
-      'Instant off-chain trading',
-      'Session-based security',
-      'State channel management',
+      'Instant off-chain trading via Yellow Network',
+      'Session-based security model',
       'Binary prediction markets',
-      'Simulated yield accrual'
+      'Sui blockchain settlement',
+      'Real-time market updates'
     ],
-    nextPhase: 'Sui blockchain settlement'
+    endpoints: {
+      session: '/api/session/*',
+      markets: '/api/market/*',
+      trading: '/api/trade/*',
+      yellow: '/api/yellow/*',
+      balance: '/api/balance/*'
+    }
   });
 });
 
 // API routes
-app.use('/api', marketRoutes);
+app.use('/api/session', sessionRoutes);
+app.use('/api/market', marketRoutes);
+app.use('/api/trade', tradeRoutes);
+app.use('/api/yellow', yellowRoutes);
+app.use('/api/balance', balanceRoutes);
 
 // Error handling
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

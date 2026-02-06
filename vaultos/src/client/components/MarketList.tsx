@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 
 // HARDCODED ADMIN WALLET (replace with your actual admin address)
-const ADMIN_WALLET = '0xYourAdminWalletAddressHere'.toLowerCase();
+const ADMIN_WALLET = '0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1'.toLowerCase();
 
 interface Market {
   id: string;

@@ -50,7 +50,6 @@ export interface Market {
     appSessionId: string;
     channelId: string;
 }
-}
 
 export interface Trade {
     id: string;
@@ -129,7 +128,24 @@ export class MarketService {
     /**
      * Broadcast market update to all connected clients via WebSocket
      * Clients receive AUTHORITATIVE state - no calculations on frontend
-     */channelId: string;
+     */
+    private broadcastMarketUpdate(market: Market): void {
+        const stats = this.getMarketStats(market.id);
+        const message = JSON.stringify({
+            type: 'market_update',
+            data: stats,
+        });
+
+        this.wss.clients.forEach((client: WebSocket) => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(message);
+            }
+        });
+    }
+
+    async createMarket(data: {
+        appSessionId: string;
+        channelId: string;
         question: string;
         description: string;
         durationMinutes: number;
@@ -167,28 +183,13 @@ export class MarketService {
 
         console.log(`✅ Market created: ${marketId} | Channel: ${data.channelId}`);
         console.log(`   Question: ${data.question}`);
-        console.log(`   Liquidity: ${data.initialLiquidity} USDC
-            id: marketId,
-            appSessionId: data.appSessionId,
-            question: data.question,
-            description: data.description,
-            outcomes: ['YES', 'NO'],
-            creator: data.creatorAddress,
-            createdAt: new Date(),
-            endTime: new Date(endTime),
-            status: MarketStatus.ACTIVE,
-            amm: ammState,
-            totalVolume: 0n,
-            trades: [],
-            positions: new Map(),
-            channelId: data.appSessionId,
-        };
-
-        this.markets.set(marketId, newMarket);
+        console.log(`   Liquidity: ${data.initialLiquidity} USDC`);
         
-        // Broadcast authoritative initial state
-        this.broadcastMarketUpdate(newMarket);
- 
+        return newMarket;
+    }
+
+    /**
+     * Execute Trade
      * Now integrates with Yellow Network for balance transfers
      */
     async executeTrade(intent: TradeIntent): Promise<Trade> {

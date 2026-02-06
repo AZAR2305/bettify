@@ -208,6 +208,46 @@ export class SessionService {
     console.log(`✅ Deposit successful, new balance: ${newTotal} USDC`);
   }
 
+  /**
+   * Deposit to existing channel
+   * Alias for depositFunds with return value
+   */
+  async depositToChannel(sessionId: string, amount: number): Promise<{ newBalance: number }> {
+    await this.depositFunds(sessionId, amount);
+    const session = this.sessions.get(sessionId);
+    return {
+      newBalance: parseFloat(session!.depositAmount)
+    };
+  }
+
+  /**
+   * Withdraw from existing channel
+   */
+  async withdrawFromChannel(sessionId: string, amount: number): Promise<{ newBalance: number }> {
+    const sessionData = this.sessions.get(sessionId);
+    if (!sessionData) {
+      throw new Error('Session not found');
+    }
+
+    const currentBalance = parseFloat(sessionData.depositAmount);
+    if (amount > currentBalance) {
+      throw new Error(`Insufficient balance: ${currentBalance} USDC`);
+    }
+
+    console.log(`💸 Withdrawing ${amount} USDC from session ${sessionId}`);
+
+    // Resize channel to reduce funds
+    const newTotal = currentBalance - amount;
+    await sessionData.yellowClient.resizeChannel(newTotal.toString());
+
+    sessionData.depositAmount = newTotal.toString();
+    console.log(`✅ Withdrawal successful, new balance: ${newTotal} USDC`);
+
+    return {
+      newBalance: newTotal
+    };
+  }
+
   getSession(sessionId: string): SessionData | undefined {
     return this.sessions.get(sessionId);
   }

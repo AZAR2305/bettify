@@ -75,7 +75,36 @@ VaultOS is a next-generation prediction market platform that solves two critical
 
 ---
 
-## 🚀 Quick Start
+## � Sui Integration (NEW!)
+
+VaultOS now includes **Sui blockchain integration** for transparent market settlement:
+
+### Hybrid Architecture
+- **Trading Layer:** Yellow Network (off-chain, instant)
+- **Settlement Layer:** Sui (on-chain, transparent)
+
+### What It Does
+When a prediction market resolves, the final outcome is recorded on Sui as an immutable object. This provides:
+- ✅ **Transparent verification** - Anyone can verify outcomes
+- ✅ **Tamper-proof records** - Settlements are permanent
+- ✅ **Hybrid benefits** - Speed + Trust
+
+### Quick Deploy
+```powershell
+# Deploy Sui settlement contract
+npm run sui:deploy
+
+# Test the integration
+npm run sui:test-settlement
+```
+
+📖 **Full Guide:** [SUI_QUICK_START.md](SUI_QUICK_START.md) (5 commands, 5 minutes)
+
+**Contract:** [sui/sources/prediction_settlement.move](sui/sources/prediction_settlement.move)
+
+---
+
+## �🚀 Quick Start
 
 ### Prerequisites
 

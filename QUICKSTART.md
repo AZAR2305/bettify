@@ -71,7 +71,7 @@ Navigate to: **http://localhost:5173**
 - Yellow Network state channels ONLY work with funded ERC-20 balances
 - Token address: `0xDB9F293e3898c9E5536A3be1b0C56c89d2b32DEb` (Base Sepolia)
 - **Easy way**: Click "💰 Get Testnet ytest.USD" button in the UI (Session Manager sidebar)
-- Manual way: Visit [Yellow faucet](https://earn-ynetwork.yellownetwork.io)
+- Manual way: Visit [Yellow Sandbox Faucet](https://clearnet-sandbox.yellow.com)
 - Cannot use ETH or other tokens for trading
 
 ---

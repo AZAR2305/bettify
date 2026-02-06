@@ -13,7 +13,20 @@
  * - Close: Final settlement on-chain
  */
 import React, { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useReadContract, useSignMessage } from 'wagmi';
+import { formatUnits } from 'viem';
+
+// ytest.USD token on Base Sepolia
+const YTEST_USD_TOKEN = '0xDB9F293e3898c9E5536A3be1b0C56c89d2b32DEb';
+const ERC20_ABI = [
+  {
+    inputs: [{ name: 'account', type: 'address' }],
+    name: 'balanceOf',
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const;
 
 interface Session {
   sessionId: string;
@@ -31,6 +44,19 @@ interface SessionManagerProps {
 
 const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
   const { address, isConnected } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+  
+  // Check ytest.USD balance
+  const { data: ytestBalance, refetch: refetchBalance } = useReadContract({
+    address: YTEST_USD_TOKEN,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address,
+    },
+  });
+
   const [session, setSession] = useState<Session | null>(null);
   const [depositAmount, setDepositAmount] = useState<string>('1000');
   const [loading, setLoading] = useState(false);
@@ -39,6 +65,11 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
   const [additionalDeposit, setAdditionalDeposit] = useState<string>('100');
   const [faucetLoading, setFaucetLoading] = useState(false);
   const [faucetMessage, setFaucetMessage] = useState<string>('');
+
+  // Format balance for display
+  const formattedBalance = ytestBalance 
+    ? parseFloat(formatUnits(ytestBalance as bigint, 6)).toFixed(2)
+    : '0.00';
 
   // Load existing session
   useEffect(() => {
@@ -81,11 +112,28 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
       return;
     }
 
+    // Check ytest.USD balance
+    const balanceNum = parseFloat(formattedBalance);
+    const depositNum = parseFloat(depositAmount);
+    
+    if (balanceNum < depositNum) {
+      setError(`Insufficient ytest.USD balance. You have ${formattedBalance} but need ${depositAmount}`);
+      setFaucetMessage('💡 Click the "Get Testnet ytest.USD" button above to get tokens');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setCreatingStep(1);
 
     try {
+      // Request permission to connect to Yellow Network
+      const message = `Connect to Yellow Network\n\nWallet: ${address}\nDeposit: ${depositAmount} ytest.USD\nTimestamp: ${Date.now()}`;
+      
+      console.log('🔐 Requesting signature to connect to Yellow Network...');
+      await signMessageAsync({ message });
+      console.log('✅ Permission granted');
+
       // Check for existing channel to resume
       const existingChannelId = localStorage.getItem(`channel_${address}`);
       if (existingChannelId) {
@@ -225,6 +273,10 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
     setFaucetMessage('Checking faucet availability...');
 
     try {
+        // Refetch balance after successful faucet request
+        setTimeout(() => {
+          refetchBalance();
+        }, 5000);
       const response = await fetch('http://localhost:3000/api/yellow/request-faucet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -246,14 +298,14 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
         // Show manual faucet link
         setFaucetMessage(`❌ ${data.error || data.message || 'Faucet unavailable'}`);
         setTimeout(() => {
-          setFaucetMessage('💡 Use manual faucet: https://earn-ynetwork.yellownetwork.io');
+          setFaucetMessage('💡 Use manual faucet: https://clearnet-sandbox.yellow.com');
         }, 2000);
       }
     } catch (err: any) {
       console.error('Faucet error:', err);
       setFaucetMessage('❌ Error: Automatic faucet unavailable');
       setTimeout(() => {
-        setFaucetMessage('💡 Use manual faucet: https://earn-ynetwork.yellownetwork.io');
+        setFaucetMessage('💡 Use manual faucet: https://clearnet-sandbox.yellow.com');
       }, 2000);
     } finally {
       setFaucetLoading(false);
@@ -282,10 +334,33 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
             <div className="flow-arrow">↓</div>
             <div className="flow-badge off-chain">OFF-CHAIN</div>
           </div>
-          
+
           <p className="session-description">
             Create a Yellow Network state channel for instant, gasless trading
           </p>
+
+          {/* ytest.USD Balance Display */}
+          <div className="balance-display" style={{ 
+            marginBottom: '15px', 
+            padding: '12px', 
+            background: '#1a1f35', 
+            borderRadius: '8px',
+            border: '1px solid #2a3f5f'
+          }}>
+            <div style={{ fontSize: '13px', color: '#888', marginBottom: '5px' }}>Your ytest.USD Balance:</div>
+            <div style={{ 
+              fontSize: '24px', 
+              fontWeight: 'bold', 
+              color: parseFloat(formattedBalance) >= parseFloat(depositAmount) ? '#4CAF50' : '#FFD700' 
+            }}>
+              {formattedBalance} <span style={{ fontSize: '14px', color: '#888' }}>ytest.USD</span>
+            </div>
+            {parseFloat(formattedBalance) < parseFloat(depositAmount) && (
+              <div style={{ fontSize: '12px', color: '#FFD700', marginTop: '5px' }}>
+                ⚠️ Insufficient balance for deposit
+              </div>
+            )}
+          </div>
 
           {/* Faucet Button */}
           <div className="faucet-section" style={{ marginBottom: '20px', padding: '15px', background: '#16213e', borderRadius: '0px', border: '2px solid #FFD700' }}>
@@ -327,12 +402,12 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
                 <>
                   Or visit{' '}
                   <a 
-                    href="https://earn-ynetwork.yellownetwork.io" 
+                    href="https://clearnet-sandbox.yellow.com" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     style={{ color: '#4A90E2', textDecoration: 'underline' }}
                   >
-                    Yellow Network Faucet
+                    Yellow Network Sandbox
                   </a>
                   {' '}directly
                 </>
@@ -371,10 +446,11 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
           
           <button
             onClick={createSession}
-            disabled={loading || !depositAmount || parseFloat(depositAmount) < 10}
+            disabled={loading || !depositAmount || parseFloat(depositAmount) < 10 || parseFloat(formattedBalance) < parseFloat(depositAmount)}
             className="btn btn-primary btn-large"
+            title={parseFloat(formattedBalance) < parseFloat(depositAmount) ? 'Insufficient ytest.USD balance' : ''}
           >
-            {loading ? 'Creating Session...' : 'Start Trading Session'}
+            {loading ? 'Creating Session...' : parseFloat(formattedBalance) < parseFloat(depositAmount) ? 'Insufficient Balance' : 'Start Trading Session'}
           </button>
           
           <div className="session-benefits">
@@ -466,7 +542,21 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
         </div>
       )}
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          {error}
+          {error.includes('Session expired') && (
+            <button
+              onClick={createSession}
+              disabled={loading}
+              className="btn btn-primary"
+              style={{ marginTop: '10px', width: '100%' }}
+            >
+              {loading ? 'Reconnecting...' : '🔄 Reconnect Session'}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

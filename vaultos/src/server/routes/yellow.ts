@@ -234,16 +234,14 @@ router.post('/request-faucet', async (req, res) => {
     try {
         console.log(`💰 Requesting testnet tokens for ${address}...`);
 
-        const response = await fetch('https://earn-ynetwork.yellownetwork.io/api/faucet', {
+        const response = await fetch('https://clearnet-sandbox.yellow.com/faucet/requestTokens', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
             },
             body: JSON.stringify({
-                address: address,
-                chain_id: CHAIN_ID,
-                token: 'ytest.usd',
+                userAddress: address,
             }),
         });
 
@@ -288,11 +286,11 @@ router.post('/request-faucet', async (req, res) => {
             alternatives: [
                 {
                     method: 'Web Interface',
-                    url: 'https://earn-ynetwork.yellownetwork.io',
+                    url: 'https://clearnet-sandbox.yellow.com',
                     steps: [
-                        `1. Visit: https://earn-ynetwork.yellownetwork.io`,
+                        `1. Visit: https://clearnet-sandbox.yellow.com`,
                         `2. Paste your wallet: ${address}`,
-                        '3. Select: Base Sepolia',
+                        '3. Request ytest.USD tokens',
                         'Select token: ytest.usd',
                         'Click "Request Tokens"'
                     ]

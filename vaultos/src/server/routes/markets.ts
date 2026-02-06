@@ -3,12 +3,12 @@
  */
 
 import express from 'express';
-import { MarketService, MarketStatus } from '../services/MarketService';
+import marketService from '../services/MarketService';
+import { MarketStatus } from '../services/MarketService';
 
 const router = express.Router();
 
-// Initialize MarketService (in production, this should be a singleton)
-const marketService = new MarketService(process.env.PRIVATE_KEY as `0x${string}`);
+// MarketService is now a singleton - use the imported instance
 
 /**
  * Create a new market (Admin only)
