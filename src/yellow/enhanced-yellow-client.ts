@@ -380,21 +380,14 @@ export class EnhancedYellowClient {
      */
     async createChannel(depositAmount?: bigint): Promise<string> {
         try {
-            // Find ytest.USD asset
-            const asset = this.config?.assets?.find(
-                (a: any) => a.chain_id === baseSepolia.id && a.symbol === 'ytest.usd'
-            );
-
-            if (!asset) {
-                throw new Error('ytest.usd not found in Yellow config');
-            }
-
-            const tokenAddress = asset.token as `0x${string}`;
-            const decimals = BigInt(asset.decimals);
-            const amount = depositAmount || (20n * (10n ** decimals));
+            // Use Official USDC token on Base Sepolia (where Circle faucet sends)
+            const tokenAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as `0x${string}`;
+            const decimals = 6n; // USDC has 6 decimals
+            const amount = depositAmount || (20n * (10n ** decimals)); // Default 20 USDC
 
             console.log('💰 Creating funded channel...');
-            console.log(`   Amount: ${amount / (10n ** decimals)} ytest.USD`);
+            console.log(`   Token: Official USDC (${tokenAddress})`);
+            console.log(`   Amount: ${amount / (10n ** decimals)} USDC`);
 
             // Approve custody contract
             console.log('💳 Approving custody contract...');

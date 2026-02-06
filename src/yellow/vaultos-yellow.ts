@@ -300,22 +300,16 @@ export class VaultOSYellowClient {
      */
     async createChannel(): Promise<void> {
         try {
-            // Step 1: Find ytest.USD asset and read decimals from config
-            const asset = this.config.assets?.find(
-                (a: any) => a.chain_id === baseSepolia.id && a.symbol === 'ytest.usd'
-            );
+            // Step 1: Use Official USDC token on Base Sepolia
+            // This is where Circle faucet sends tokens
+            const tokenAddress = '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as `0x${string}`;
+            const decimals = 6n; // USDC has 6 decimals
+            const depositAmount = 20n * (10n ** decimals); // 20 USDC = 20,000,000 units
 
-            if (!asset) {
-                throw new Error('ytest.usd not found in Yellow config');
-            }
-            
-            const tokenAddress = asset.token as `0x${string}`;
-            const decimals = BigInt(asset.decimals);
-            const depositAmount = 20n * (10n ** decimals); // Use 20 USDC to match ledger balance
-
+            console.log('💰 Using Official USDC on Base Sepolia');
             console.log('💰 Token:', tokenAddress);
             console.log('💰 Decimals:', decimals.toString());
-            console.log('💰 Deposit amount:', depositAmount.toString());
+            console.log('💰 Deposit amount:', depositAmount.toString(), '(20 USDC)');
 
             // Step 2: Approve custody contract to spend tokens
             console.log('💳 Approving custody contract...');

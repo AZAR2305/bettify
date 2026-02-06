@@ -43,6 +43,7 @@ export interface Market {
     // Resolution
     winningOutcome?: 'YES' | 'NO';
     resolvedAt?: Date;
+    settledAt?: Date;
     
     // Yellow Network
     appSessionId: string;
@@ -83,7 +84,6 @@ export class MarketService {
     private markets: Map<string, Market> = new Map();
     private tradeNonce: number = 0;
     private wss: WebSocketServer | null = null;
-    private ammMath: LmsrAmm = new LmsrAmm();
 
     // Initialize WebSocket server for real-time updates
     initializeWebSocket(server: any) {
@@ -137,7 +137,8 @@ export class MarketService {
         const endTime = Date.now() + (data.durationMinutes * 60 * 1000);
 
         // Initialize AMM with LMSR
-        const ammState = this.ammMath.initializeMarket(data.initialLiquidity);
+        const liquidityBigInt = toAmmAmount(data.initialLiquidity);
+        const ammState = LmsrAmm.initializeMarket(liquidityBigInt);
 
         const newMarket: Market = {
             id: marketId,
@@ -195,31 +196,38 @@ export class MarketService {
 
         // Calculate authoritative trade parameters using AMM
         const outcomeIndex = intent.outcome === 'YES' ? 0 : 1;
-        const result = this.ammMath.buyShares(market.amm, outcomeIndex, intent.amount);
+        const sharesBigInt = toAmmAmount(intent.amount);
+        const result = LmsrAmm.calculateCost(market.amm, intent.outcome, sharesBigInt);
 
         // Update market state
-        market.amm = result.newState;
+        market.amm = { ...market.amm, shares: result.newShares };
         market.totalVolume += result.cost;
 
         // Update user position
-        const positionKey = `${intent.userAddress}_${intent.outcome}`;
-        const currentPosition = market.positions.get(positionKey) || { shares: 0, totalCost: 0 };
+        const positionKey = `${intent.user}_${intent.outcome}`;
+        const currentPosition = market.positions.get(positionKey) || { 
+            userAddress: intent.user,
+            outcome: intent.outcome,
+            shares: 0n, 
+            totalCost: 0n 
+        };
         market.positions.set(positionKey, {
-            shares: currentPosition.shares + sharesReceived,
-            totalCost: currentPosition.totalCost + cost,
+            userAddress: intent.user,
+            outcome: intent.outcome,
+            shares: currentPosition.shares + sharesBigInt,
+            totalCost: currentPosition.totalCost + result.cost,
         });
 
         // Record trade
         const trade: Trade = {
             id: `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             marketId: intent.marketId,
-            userAddress: intent.userAddress,
+            user: intent.user,
             outcome: intent.outcome,
-            amount: intent.amount,
-            cost,
-            sharesReceived,
-            price: newPrice,
-            timestamp: Date.now(),
+            amount: result.cost,
+            shares: sharesBigInt,
+            price: result.priceAfter,
+            timestamp: new Date(),
         };
         market.trades.push(trade);
 
@@ -228,23 +236,21 @@ export class MarketService {
         // Broadcast authoritative state update
         this.broadcastMarketUpdate(market);
 
-        console.log(`💰 Trade executed: ${sharesReceived.toFixed(2)} shares of ${intent.outcome} for ${cost.toFixed(2)} USDC | Market: ${intent.marketId}`);
+        console.log(`💰 Trade executed: ${fromAmmAmount(sharesBigInt)} shares of ${intent.outcome} for ${fromAmmAmount(result.cost)} USDC | Market: ${intent.marketId}`);
         return trade;
     }
 
     /**
      * Get user's positions for a market
      */
-    getUserPositions(marketId: string, userAddress: string): { outcome: number; shares: number; totalCost: number }[] {
+    getUserPositions(marketId: string, userAddress: string): Position[] {
         const market = this.markets.get(marketId);
         if (!market) return [];
 
-        const positions: { outcome: number; shares: number; totalCost: number }[] = [];
-        market.ammState.quantityShares.forEach((_, outcome) => {
-            const positionKey = `${userAddress}_${outcome}`;
-            const position = market.positions.get(positionKey);
-            if (position && position.shares > 0) {
-                positions.push({ outcome, shares: position.shares, totalCost: position.totalCost });
+        const positions: Position[] = [];
+        market.positions.forEach((position) => {
+            if (position.userAddress === userAddress && position.shares > 0n) {
+                positions.push(position);
             }
         });
 
@@ -258,8 +264,7 @@ export class MarketService {
         const market = this.markets.get(marketId);
         if (!market) return [];
 
-        return market.trades.filter(trade => trade.userAddress === userAddress);
-
+        return market.trades.filter(trade => trade.user === userAddress);
     }
 
     /**
@@ -292,7 +297,7 @@ export class MarketService {
      * Called by oracle with outcome determination
      * Authority: ONLY oracle can resolve (not user-triggered)
      */
-    async resolveMarket(marketId: string, winningOutcome: number, oracleProof: string): Promise<Market> {
+    async resolveMarket(marketId: string, winningOutcome: 'YES' | 'NO', oracleProof: string): Promise<Market> {
         const market = this.markets.get(marketId);
         if (!market) throw new Error('Market not found');
         if (market.status !== MarketStatus.FROZEN) {
@@ -304,7 +309,7 @@ export class MarketService {
 
         market.status = MarketStatus.RESOLVED;
         market.winningOutcome = winningOutcome;
-        market.resolvedAt = Date.now();
+        market.resolvedAt = new Date();
 
         this.markets.set(marketId, market);
 
@@ -335,7 +340,7 @@ export class MarketService {
         // 3. Submit to Yellow Network adjudicator contract
 
         market.status = MarketStatus.SETTLED;
-        market.settledAt = Date.now();
+        market.settledAt = new Date();
         this.markets.set(marketId, market);
 
         this.broadcastMarketUpdate(market);
@@ -377,7 +382,7 @@ export class MarketService {
             return payouts;
         }
 
-        const totalPool = market.ammState.totalVolume;
+        const totalPool = market.totalVolume;
 
         // Calculate payouts for winners
         market.positions.forEach((position, key) => {
@@ -408,11 +413,11 @@ export class MarketService {
         if (!market) return null;
 
         // Calculate current prices from AMM
-        const prices = market.ammState.quantityShares.map((_, outcome) => 
-            this.ammMath.getPrice(market.ammState, outcome)
-        );
+        const yesPrice = this.ammMath.getPrice(market.amm, 0);
+        const noPrice = this.ammMath.getPrice(market.amm, 1);
+        const prices = [yesPrice, noPrice];
 
-        const volumes = Array.from(market.ammState.quantityShares);
+        const volumes = [market.amm.yesShares, market.amm.noShares];
         const participantCount = new Set(
             Array.from(market.positions.keys()).map(key => key.split('_')[0])
         ).size;
@@ -420,7 +425,7 @@ export class MarketService {
         return {
             prices,
             volumes,
-            totalVolume: market.ammState.totalVolume,
+            totalVolume: market.totalVolume,
             participantCount,
         };
     }
