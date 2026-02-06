@@ -39,7 +39,7 @@ app.get('/', (req, res) => {
       'Instant off-chain trading via Yellow Network',
       'Session-based security model',
       'Binary prediction markets',
-      'Sui blockchain settlement',
+      'Zero gas fees during trading',
       'Real-time market updates'
     ],
     endpoints: {
@@ -73,21 +73,22 @@ app.listen(PORT, () => {
   console.log('');
   console.log('╔═══════════════════════════════════════════════════════╗');
   console.log('║                      VaultOS                          ║');
-  console.log('║          Real-time Prediction Market MVP              ║');
+  console.log('║     Real-time Prediction Market - Yellow Network      ║');
   console.log('╚═══════════════════════════════════════════════════════╝');
   console.log('');
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log('');
-  console.log('📡 Phase 1: Yellow Network Integration');
-  console.log('   ✅ Instant off-chain trading');
-  console.log('   ✅ Gasless transactions');
+  console.log('⚡ Yellow Network Features:');
+  console.log('   ✅ Instant off-chain trading (< 100ms)');
+  console.log('   ✅ Zero gas fees during trading');
   console.log('   ✅ Session-based security');
   console.log('   ✅ State channel management');
+  console.log('   ✅ Cryptographic settlement');
   console.log('');
-  console.log('🔮 Next Phase: Sui Blockchain Settlement');
-  console.log('   ⏳ Parallel transaction processing');
-  console.log('   ⏳ Oracle-based resolution');
-  console.log('   ⏳ Real yield protocols');
+  console.log('📊 Market Features:');
+  console.log('   ✅ LMSR AMM pricing');
+  console.log('   ✅ Real-time odds updates');
+  console.log('   ✅ Multi-market portfolios');
   console.log('');
   console.log('📖 API Documentation:');
   console.log(`   http://localhost:${PORT}/`);

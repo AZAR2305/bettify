@@ -42,9 +42,17 @@ app.use('/api/state', stateRoutes);
 app.use('/api/yellow', yellowRoutes);
 
 app.listen(PORT, () => {
-  console.log(`🚀 VaultOS server running on http://localhost:${PORT}`);
-  console.log(`⚡ Yellow Network integration active`);
-  console.log(`📊 LMSR AMM prediction markets ready`);
+  console.log(`\n🟢 ====================================`);
+  console.log(`   VaultOS Server Started`);
+  console.log(`====================================`);
+  console.log(`📡 Server: http://localhost:${PORT}`);
+  console.log(`🌐 Environment: SANDBOX (Testnet)`);
+  console.log(`⚡ Yellow Network: Base Sepolia`);
+  console.log(`🔗 Clearnode: wss://clearnet-sandbox.yellow.com/ws`);
+  console.log(`💰 Token: ytest.USD (free testnet)`);
+  console.log(`📊 Markets: LMSR AMM ready`);
+  console.log(`⚠️  Using testnet - no real money`);
+  console.log(`====================================\n`);
 });
 
 export default app;

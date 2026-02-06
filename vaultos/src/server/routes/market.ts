@@ -33,7 +33,45 @@ router.post('/create', async (req, res) => {
         });
         
         console.log('Market created successfully:', market.id);
-        res.status(201).json(market);
+        
+        // Convert BigInt values to numbers for JSON serialization
+        const serializableMarket = {
+            id: market.id,
+            appSessionId: market.appSessionId,
+            channelId: market.channelId,
+            question: market.question,
+            description: market.description,
+            outcomes: market.outcomes,
+            creator: market.creator,
+            createdAt: market.createdAt,
+            endTime: market.endTime,
+            status: market.status,
+            totalVolume: Number(market.totalVolume),
+            amm: {
+                liquidity: Number(market.amm.liquidity),
+                shares: {
+                    YES: Number(market.amm.shares.YES),
+                    NO: Number(market.amm.shares.NO)
+                }
+            },
+            trades: market.trades?.map(t => ({
+                id: t.id,
+                marketId: t.marketId,
+                user: t.user,
+                outcome: t.outcome,
+                amount: Number(t.amount),
+                shares: Number(t.shares),
+                price: t.price,
+                timestamp: t.timestamp
+            })) || [],
+            positions: Array.from(market.positions.entries()).map(([key, pos]) => ({
+                key,
+                shares: Number(pos.shares),
+                invested: Number(pos.invested)
+            }))
+        };
+        
+        res.status(201).json(serializableMarket);
     } catch (error) {
         console.error('Error creating market:', error);
         res.status(500).json({ error: error.message });

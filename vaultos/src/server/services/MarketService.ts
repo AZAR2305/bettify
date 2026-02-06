@@ -13,7 +13,7 @@
 import { WebSocket, WebSocketServer } from 'ws';
 import { LmsrAmm, AmmState, AmmResult, toAmmAmount, fromAmmAmount } from './AmmMath';
 import { SettlementMath, Position } from './SettlementMath';
-import { VaultOSYellowClient } from '../../../src/yellow/vaultos-yellow';
+import { VaultOSYellowClient } from '../../../../src/yellow/vaultos-yellow';
 
 export enum MarketStatus {
     ACTIVE = 'active',
@@ -129,8 +129,9 @@ export class MarketService {
      * Broadcast market update to all connected clients via WebSocket
      * Clients receive AUTHORITATIVE state - no calculations on frontend
      */
-    private broadcastMarketUpdate(market: Market): void {
-        const stats = this.getMarketStats(market.id);
+    private broadcastMarketUpdate(market: Market): void {        // Skip broadcasting if WebSocket server not initialized
+        if (!this.wss) return;
+                const stats = this.getMarketStats(market.id);
         const message = JSON.stringify({
             type: 'market_update',
             data: stats,
@@ -229,32 +230,6 @@ export class MarketService {
             totalCost: 0n 
         };
         market.positions.set(positionKey, {
-            userAddress: intent.user,
-            outcome: intent.outcome,
-            shares: currentPosition.shares + sharesBigInt,
-            totalCost: currentPosition.totalCost + result.cost,
-        });
-
-        // Record trade
-        const trade: Trade = {
-            id: `trade_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            marketId: intent.marketId,
-            user: intent.user,
-            outcome: intent.outcome,
-            amount: result.cost,
-            shares: sharesBigInt,
-            price: result.priceAfter,
-            timestamp: new Date(),
-        };
-        market.trades.push(trade);
-
-        this.markets.set(intent.marketId, market);
-
-        // Broadcast authoritative state update
-        this.broadcastMarketUpdate(market);
-
-        console.log(`✅ Trade executed: ${fromAmmAmount(sharesBigInt)} ${intent.outcome} shares @ $${result.priceAfter.toFixed(4)}`);
-        console.log(`   Cost:
             userAddress: intent.user,
             outcome: intent.outcome,
             shares: currentPosition.shares + sharesBigInt,
@@ -455,12 +430,12 @@ export class MarketService {
         const market = this.markets.get(marketId);
         if (!market) return null;
 
-        // Calculate current prices from AMM
-        const yesPrice = this.ammMath.getPrice(market.amm, 0);
-        const noPrice = this.ammMath.getPrice(market.amm, 1);
+        // Calculate current prices from AMM (static methods)
+        const yesPrice = LmsrAmm.getPrice(market.amm, 0);
+        const noPrice = LmsrAmm.getPrice(market.amm, 1);
         const prices = [yesPrice, noPrice];
 
-        const volumes = [market.amm.yesShares, market.amm.noShares];
+        const volumes = [Number(market.amm.shares.YES), Number(market.amm.shares.NO)];
         const participantCount = new Set(
             Array.from(market.positions.keys()).map(key => key.split('_')[0])
         ).size;
@@ -468,7 +443,7 @@ export class MarketService {
         return {
             prices,
             volumes,
-            totalVolume: market.totalVolume,
+            totalVolume: Number(market.totalVolume),
             participantCount,
         };
     }
@@ -504,6 +479,61 @@ export class MarketService {
             invested: totalInvested,
             winnings: userPayout,
             profit: userPayout - totalInvested,
+        };
+    }
+
+    /**
+     * Get all active markets
+     */
+    getActiveMarkets(): any[] {
+        const markets: any[] = [];
+        this.markets.forEach((market) => {
+            const yesPrice = LmsrAmm.getPrice(market.amm, 0);
+            const noPrice = LmsrAmm.getPrice(market.amm, 1);
+            
+            markets.push({
+                id: market.id,
+                question: market.question,
+                description: market.description || '',
+                durationMinutes: Math.floor((market.endTime.getTime() - market.createdAt.getTime()) / 60000),
+                yesPrice,
+                noPrice,
+                createdAt: market.createdAt,
+                endTime: market.endTime,
+                status: market.status,
+                totalVolume: Number(market.totalVolume),
+                participantCount: new Set(
+                    Array.from(market.positions.keys()).map(key => key.split('_')[0])
+                ).size,
+            });
+        });
+        return markets;
+    }
+
+    /**
+     * Get market by ID
+     */
+    getMarketById(marketId: string): any | null {
+        const market = this.markets.get(marketId);
+        if (!market) return null;
+        
+        const yesPrice = LmsrAmm.getPrice(market.amm, 0);
+        const noPrice = LmsrAmm.getPrice(market.amm, 1);
+        
+        return {
+            id: market.id,
+            question: market.question,
+            description: market.description || '',
+            durationMinutes: Math.floor((market.endTime.getTime() - market.createdAt.getTime()) / 60000),
+            yesPrice,
+            noPrice,
+            createdAt: market.createdAt,
+            endTime: market.endTime,
+            status: market.status,
+            totalVolume: Number(market.totalVolume),
+            participantCount: new Set(
+                Array.from(market.positions.keys()).map(key => key.split('_')[0])
+            ).size,
         };
     }
 }

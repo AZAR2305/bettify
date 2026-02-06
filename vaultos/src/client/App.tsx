@@ -64,11 +64,6 @@ const App = () => {
           color: #856404;
         }
 
-        .tech-badge.sui {
-          border-color: #4da3ff;
-          color: #004085;
-        }
-
         .container {
           display: grid;
           grid-template-columns: 320px 1fr;
@@ -243,10 +238,10 @@ const App = () => {
         <h1>🏛️ VaultOS</h1>
         <p className="subtitle">Instant Prediction Markets with Zero Gas Fees</p>
         <div className="tech-stack">
-          <span className="tech-badge yellow">⚡ Yellow Network</span>
-          <span className="tech-badge sui">🔷 Sui Settlement</span>
+          <span className="tech-badge yellow">⚡ Yellow Network State Channels</span>
           <span className="tech-badge">🔒 Session Security</span>
           <span className="tech-badge">💱 AMM Trading</span>
+          <span className="tech-badge">⚡ Instant Settlement</span>
         </div>
       </header>
 
@@ -300,8 +295,8 @@ const App = () => {
                     <p>Session keys protect your main wallet while allowing seamless trading</p>
                   </div>
                   <div className="feature-box">
-                    <h3>🔷 Sui Settlement</h3>
-                    <p>Final market outcomes recorded on Sui blockchain for transparency</p>
+                    <h3>⚡ Instant Settlement</h3>
+                    <p>All trades settle instantly off-chain with cryptographic security</p>
                   </div>
                   <div className="feature-box">
                     <h3>💱 Fair Pricing</h3>
@@ -312,17 +307,19 @@ const App = () => {
                 <div className="architecture-section">
                   <h3>🏗️ Architecture</h3>
                   <div className="architecture-layer">
-                    <h4>Trading Layer: Yellow Network</h4>
+                    <h4>Trading Layer: Yellow Network State Channels</h4>
                     <p>
                       All trades execute instantly off-chain using Yellow Network state channels.
-                      No gas fees, no waiting, no blockchain congestion.
+                      No gas fees, no waiting, no blockchain congestion. State updates are cryptographically
+                      signed and verified by all participants.
                     </p>
                   </div>
                   <div className="architecture-layer">
-                    <h4>Settlement Layer: Sui Blockchain</h4>
+                    <h4>Settlement Layer: Off-Chain</h4>
                     <p>
-                      When markets resolve, final outcomes are committed to Sui as immutable objects.
-                      This provides transparent verification and trustless settlement.
+                      Markets resolve instantly using Yellow Network's state channel technology.
+                      All positions and payouts are calculated and distributed within the state channel
+                      for maximum speed and zero gas costs.
                     </p>
                   </div>
                   <div className="architecture-layer">
@@ -363,16 +360,17 @@ const App = () => {
                 </ol>
 
                 <div style={{ 
-                  background: '#e7f3ff', 
-                  border: '2px solid #4da3ff', 
+                  background: '#fff3cd', 
+                  border: '2px solid #ffc107', 
                   borderRadius: '12px', 
                   padding: '20px',
                   marginTop: '30px'
                 }}>
-                  <h4 style={{ marginTop: 0, color: '#004085' }}>🎓 Built for ETHGlobal</h4>
-                  <p style={{ marginBottom: 0, color: '#004085' }}>
-                    This platform demonstrates the power of hybrid blockchain architecture:
-                    Yellow Network for speed, Sui for transparency. The best of both worlds.
+                  <h4 style={{ marginTop: 0, color: '#856404' }}>⚡ Powered by Yellow Network</h4>
+                  <p style={{ marginBottom: 0, color: '#856404' }}>
+                    This platform demonstrates the power of state channel technology:
+                    instant trading, zero gas fees, and cryptographically secure settlement.
+                    All off-chain, all the time.
                   </p>
                 </div>
               </div>

@@ -198,15 +198,19 @@ export class LmsrAmm {
 /**
  * Helper: Convert USDC amount (6 decimals) to AMM precision
  */
-export function toAmmAmount(usdcAmount: bigint): bigint {
+export function toAmmAmount(usdcAmount: number | bigint): bigint {
+    if (typeof usdcAmount === 'number') {
+        // Convert number to microUSDC (multiply by 1M for 6 decimals)
+        return BigInt(Math.floor(usdcAmount * 1_000_000));
+    }
     return usdcAmount; // Both use 6 decimals
 }
 
 /**
  * Helper: Convert AMM amount to USDC (6 decimals)
  */
-export function fromAmmAmount(ammAmount: bigint): bigint {
-    return ammAmount;
+export function fromAmmAmount(ammAmount: bigint): number {
+    return Number(ammAmount) / 1_000_000;
 }
 
 /**

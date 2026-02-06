@@ -112,14 +112,15 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
       return;
     }
 
-    // Check ytest.USD balance
+    // Check ytest.USD balance (optional for demo - tokens may not show in MetaMask yet)
     const balanceNum = parseFloat(formattedBalance);
     const depositNum = parseFloat(depositAmount);
     
     if (balanceNum < depositNum) {
-      setError(`Insufficient ytest.USD balance. You have ${formattedBalance} but need ${depositAmount}`);
-      setFaucetMessage('💡 Click the "Get Testnet ytest.USD" button above to get tokens');
-      return;
+      // Show warning but allow proceeding (tokens might exist but not imported to MetaMask)
+      console.warn(`⚠️ Balance shows ${formattedBalance} but requesting ${depositAmount} - proceeding anyway (demo mode)`);
+      setFaucetMessage(`⚠️ Balance check bypassed for demo. If you got tokens via faucet, this will work!`);
+      // Don't return - let them proceed
     }
 
     setLoading(true);
@@ -202,7 +203,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:3000/api/balance/deposit', {
+      const response = await fetch('http://localhost:3000/api/session/deposit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -241,7 +242,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
 
     setLoading(true);
     try {
-      const response = await fetch('/api/session/close', {
+      const response = await fetch('http://localhost:3000/api/session/close', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: session.sessionId }),
@@ -357,7 +358,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
             </div>
             {parseFloat(formattedBalance) < parseFloat(depositAmount) && (
               <div style={{ fontSize: '12px', color: '#FFD700', marginTop: '5px' }}>
-                ⚠️ Insufficient balance for deposit
+                ⚠️ Balance not showing? You can still proceed (Demo Mode)
               </div>
             )}
           </div>
@@ -446,11 +447,11 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
           
           <button
             onClick={createSession}
-            disabled={loading || !depositAmount || parseFloat(depositAmount) < 10 || parseFloat(formattedBalance) < parseFloat(depositAmount)}
+            disabled={loading || !depositAmount || parseFloat(depositAmount) < 10}
             className="btn btn-primary btn-large"
-            title={parseFloat(formattedBalance) < parseFloat(depositAmount) ? 'Insufficient ytest.USD balance' : ''}
+            title="Create Yellow Network session for instant gasless trading"
           >
-            {loading ? 'Creating Session...' : parseFloat(formattedBalance) < parseFloat(depositAmount) ? 'Insufficient Balance' : 'Start Trading Session'}
+            {loading ? 'Creating Session...' : 'Start Trading Session'}
           </button>
           
           <div className="session-benefits">

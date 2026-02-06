@@ -52,7 +52,11 @@ const MarketDashboard: React.FC = () => {
     if (address) {
       const sessionData = localStorage.getItem(`session_${address}`);
       if (sessionData) {
-        setSession(JSON.parse(sessionData));
+        const parsed = JSON.parse(sessionData);
+        console.log('📂 Session loaded from localStorage:', parsed);
+        setSession(parsed);
+      } else {
+        console.log('⚠️ No session found in localStorage for', address);
       }
     }
   }, [address]);
@@ -106,10 +110,18 @@ const MarketDashboard: React.FC = () => {
       return;
     }
 
+    console.log('🔍 Current session state:', session);
+    
     if (!session || !session.sessionId) {
-      alert('Please create a Yellow Network session first');
+      alert('Please create a Yellow Network session first (check sidebar).\n\nTip: Click "Start Trading Session" to create one.');
+      console.error('❌ No session found. Current session:', session);
       return;
     }
+
+    console.log('✅ Session found, creating market with:', {
+      sessionId: session.sessionId,
+      channelId: session.channelId
+    });
 
     setLoading(true);
     try {
@@ -193,15 +205,14 @@ const MarketDashboard: React.FC = () => {
   };
 
   const calculateOdds = (market: Market) => {
-    const yesShares = parseFloat(market.odds.YES) || 0;
-    const noShares = parseFloat(market.odds.NO) || 0;
-    const total = yesShares + noShares;
+    // Backend sends authoritative prices (0-1 range)
+    const yesPrice = market.yesPrice || 0.5;
+    const noPrice = market.noPrice || 0.5;
     
-    if (total === 0) return { yes: 50, no: 50 };
-    
+    // Convert to percentages
     return {
-      yes: Math.round((yesShares / total) * 100),
-      no: Math.round((noShares / total) * 100),
+      yes: Math.round(yesPrice * 100),
+      no: Math.round(noPrice * 100),
     };
   };
 
@@ -528,7 +539,7 @@ const MarketDashboard: React.FC = () => {
 
       <div className="dashboard-header">
         <h2>🎯 Prediction Markets Dashboard</h2>
-        <p>Trade on outcomes with instant settlement via Yellow Network + Sui</p>
+        <p>Trade on outcomes with instant settlement via Yellow Network state channels</p>
 
         <div className="stats-row">
           <div className="stat-card">

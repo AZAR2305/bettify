@@ -53,6 +53,8 @@ export class VaultOSYellowClient {
     private isAuthenticated = false;
     private authParams: any = null; // Store original auth params for signature verification
     private readonly custodyAddress = '0x019B65A265EB3363822f2752141b3dF16131b262' as `0x${string}`;
+    private readonly clearnodeUrl = 'wss://clearnet-sandbox.yellow.com/ws';
+    private readonly environment = 'SANDBOX'; // SANDBOX or PRODUCTION
 
     constructor(privateKey: `0x${string}`, rpcUrl?: string) {
         this.account = privateKeyToAccount(privateKey);
@@ -82,8 +84,12 @@ export class VaultOSYellowClient {
             challengeDuration: 3600n, // 1 hour
         });
 
-        console.log('✓ Yellow Network Client initialized');
-        console.log('  Wallet:', this.account.address);
+        console.log('🟢 Yellow Network Client initialized');
+        console.log(`   Environment: ${this.environment} (Testnet)`);
+        console.log(`   Chain: Base Sepolia (${baseSepolia.id})`);
+        console.log(`   Clearnode: ${this.clearnodeUrl}`);
+        console.log(`   Wallet: ${this.account.address}`);
+        console.log(`   Token: ytest.USD (free faucet available)`);
     }
 
     /**
@@ -93,7 +99,7 @@ export class VaultOSYellowClient {
         const tempSigner = createECDSAMessageSigner(this.account.address as `0x${string}`);
         const message = await createGetConfigMessage(tempSigner);
 
-        const tempWs = new WebSocket('wss://clearnet-sandbox.yellow.com/ws');
+        const tempWs = new WebSocket(this.clearnodeUrl);
 
         return new Promise((resolve, reject) => {
             tempWs.onopen = () => tempWs.send(message);
@@ -139,7 +145,7 @@ export class VaultOSYellowClient {
         console.log('✓ Session key generated:', sessionAccount.address);
 
         // Connect WebSocket
-        this.ws = new WebSocket('wss://clearnet-sandbox.yellow.com/ws');
+        this.ws = new WebSocket(this.clearnodeUrl);
 
         await new Promise<void>((resolve) => {
             this.ws!.on('open', () => {

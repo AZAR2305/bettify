@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { SessionService } from '../services/SessionService';
+import sessionService from '../services/SessionService';
 
 const router = Router();
-const sessionService = new SessionService();
 
 // Create a new trading session with wallet address
 // Accepts optional existingChannelId to resume channel after page reload
