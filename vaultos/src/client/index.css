@@ -6,8 +6,8 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #333;
+  background: #1a1a2e;
+  color: #fff;
   min-height: 100vh;
 }
 
@@ -20,16 +20,20 @@ body {
   text-align: center;
   color: white;
   margin-bottom: 30px;
+  padding: 20px;
+  background: #16213e;
+  border: 2px solid #FFD700;
 }
 
 .header h1 {
   font-size: 2.5rem;
   margin-bottom: 10px;
+  color: #FFD700;
 }
 
 .subtitle {
   font-size: 1.1rem;
-  opacity: 0.9;
+  color: #2196F3;
 }
 
 .container {
@@ -47,48 +51,47 @@ body {
 }
 
 .main-content {
-  background: white;
-  border-radius: 12px;
+  background: #16213e;
+  border: 2px solid #2196F3;
   padding: 30px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
 
 .nav {
   display: flex;
   gap: 10px;
   margin-bottom: 30px;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid #FFD700;
   padding-bottom: 15px;
 }
 
 .nav-btn {
-  padding: 10px 20px;
-  border: none;
+  padding: 12px 24px;
+  border: 2px solid #2196F3;
   background: transparent;
   cursor: pointer;
   font-size: 1rem;
-  color: #666;
-  border-radius: 8px;
+  color: #fff;
   transition: all 0.3s;
 }
 
 .nav-btn:hover {
-  background: #f5f5f5;
+  background: #2196F3;
+  color: #fff;
 }
 
 .nav-btn.active {
-  background: #667eea;
-  color: white;
+  background: #FFD700;
+  color: #000;
+  border-color: #FFD700;
 }
 
 /* Wallet Connect */
 .wallet-connect,
 .session-manager,
 .balance-display {
-  background: white;
-  border-radius: 12px;
+  background: #16213e;
+  border: 2px solid #FFD700;
   padding: 20px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .wallet-connect h2,
@@ -96,7 +99,7 @@ body {
 .balance-display h2 {
   font-size: 1.3rem;
   margin-bottom: 15px;
-  color: #333;
+  color: #FFD700;
 }
 
 .wallet-info,
@@ -109,47 +112,52 @@ body {
 .wallet-address,
 .wallet-balance {
   font-size: 0.9rem;
-  color: #666;
+  color: #2196F3;
 }
 
 /* Buttons */
 .btn {
   padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
+  border: 2px solid #2196F3;
+  background: transparent;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
   transition: all 0.3s;
+  color: #fff;
 }
 
 .btn-primary {
-  background: #667eea;
-  color: white;
+  background: #FFD700;
+  color: #000;
+  border-color: #FFD700;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #5568d3;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  background: #FFC700;
+  border-color: #FFC700;
 }
 
 .btn-secondary {
-  background: #f0f0f0;
-  color: #333;
+  background: #2196F3;
+  color: #fff;
+  border-color: #2196F3;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e0e0e0;
+  background: #1976D2;
+  border-color: #1976D2;
 }
 
 .btn-danger {
-  background: #ef4444;
+  background: #f44336;
   color: white;
+  border-color: #f44336;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: #dc2626;
+  background: #d32f2f;
+  border-color: #d32f2f;
 }
 
 .btn-sm {
@@ -176,21 +184,22 @@ body {
   display: block;
   margin-bottom: 5px;
   font-weight: 600;
-  color: #555;
+  color: #FFD700;
 }
 
 .input {
   width: 100%;
   padding: 10px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  border: 2px solid #2196F3;
+  background: #0f1624;
+  color: #fff;
   font-size: 1rem;
   transition: border-color 0.3s;
 }
 
 .input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #FFD700;
 }
 
 textarea.input {
@@ -206,45 +215,46 @@ textarea.input {
 
 /* Session Manager */
 .session-card {
-  background: #f9f9f9;
+  background: #0f1624;
   padding: 15px;
-  border-radius: 8px;
+  border: 2px solid #2196F3;
   margin-bottom: 15px;
 }
 
 .session-card p {
   margin-bottom: 8px;
   font-size: 0.9rem;
+  color: #fff;
 }
 
 .info-text {
   font-size: 0.85rem;
-  color: #666;
+  color: #2196F3;
   line-height: 1.6;
   margin-top: 15px;
 }
 
 .info-message {
-  color: #666;
+  color: #FFD700;
   text-align: center;
   padding: 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: #0f1624;
+  border: 2px solid #2196F3;
 }
 
 .error-message {
-  color: #ef4444;
-  background: #fee;
+  color: #f44336;
+  background: #0f1624;
+  border: 2px solid #f44336;
   padding: 10px;
-  border-radius: 8px;
   margin-top: 10px;
 }
 
 /* Balance Display */
 .balance-card {
-  background: #f9f9f9;
+  background: #0f1624;
   padding: 15px;
-  border-radius: 8px;
+  border: 2px solid #FFD700;
   margin-bottom: 15px;
 }
 
@@ -252,7 +262,8 @@ textarea.input {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #2196F3;
+  color: #fff;
 }
 
 .balance-total {
@@ -261,6 +272,8 @@ textarea.input {
   padding: 10px 0;
   font-size: 1.1rem;
   margin-top: 5px;
+  color: #FFD700;
+  font-weight: bold;
 }
 
 .balance-actions {
@@ -276,14 +289,16 @@ textarea.input {
 .positions h3 {
   font-size: 1.1rem;
   margin-bottom: 10px;
+  color: #FFD700;
 }
 
 .position-item {
-  background: #f9f9f9;
+  background: #0f1624;
   padding: 10px;
-  border-radius: 8px;
+  border: 2px solid #2196F3;
   margin-bottom: 8px;
   font-size: 0.85rem;
+  color: #fff;
 }
 
 .position-item p {
@@ -299,9 +314,9 @@ textarea.input {
 }
 
 .create-market-form {
-  background: #f9f9f9;
+  background: #0f1624;
   padding: 20px;
-  border-radius: 8px;
+  border: 2px solid #FFD700;
   margin-bottom: 30px;
 }
 
@@ -312,26 +327,25 @@ textarea.input {
 }
 
 .market-card {
-  background: #f9f9f9;
+  background: #0f1624;
   padding: 20px;
-  border-radius: 8px;
-  transition: transform 0.3s;
+  border: 2px solid #2196F3;
+  transition: border-color 0.3s;
 }
 
 .market-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border-color: #FFD700;
 }
 
 .market-card h3 {
   font-size: 1.1rem;
   margin-bottom: 10px;
-  color: #333;
+  color: #FFD700;
 }
 
 .market-description {
   font-size: 0.9rem;
-  color: #666;
+  color: #fff;
   margin-bottom: 15px;
 }
 
@@ -452,25 +466,46 @@ textarea.input {
 }
 
 .feature-card {
-  background: #f9f9f9;
+  background: #0f1624;
   padding: 30px;
-  border-radius: 12px;
-  transition: transform 0.3s;
+  border: 2px solid #2196F3;
+  transition: border-color 0.3s;
 }
 
 .feature-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  border-color: #FFD700;
 }
 
 .feature-card h3 {
   font-size: 1.3rem;
   margin-bottom: 10px;
-  color: #667eea;
+  color: #FFD700;
 }
 
 .feature-card p {
-  color: #666;
+  color: #fff;
+}
+
+.instructions {
+  margin-top: 40px;
+  text-align: left;
+  max-width: 800px;
+  margin: 40px auto;
+  background: #0f1624;
+  padding: 30px;
+  border: 2px solid #FFD700;
+}
+
+.instructions h3 {
+  color: #FFD700;
+  margin-bottom: 20px;
+}
+
+.instructions ol {
+  line-height: 1.8;
+  font-size: 1.1rem;
+  color: #fff;
+  padding-left: 20px;
 }
 
 /* Responsive */

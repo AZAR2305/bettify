@@ -227,8 +227,8 @@ async function main() {
 
         await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for balance update
 
-        // ==================== STEP 2: Market Creation with AMM ====================
-        console.log('\n📊 STEP 2: Market Creation & AMM Setup\n');
+        // ==================== STEP 3: Market Creation with AMM ====================
+        console.log('\n📊 STEP 3: Market Creation & AMM Setup\n');
         console.log('='.repeat(80));
         
         const marketConfig = {
@@ -259,8 +259,8 @@ async function main() {
         console.log(`   YES: ${(initialOdds.YES * 100).toFixed(2)}% ($${initialOdds.YES.toFixed(4)}/share)`);
         console.log(`   NO:  ${(initialOdds.NO * 100).toFixed(2)}% ($${initialOdds.NO.toFixed(4)}/share)\n`);
 
-        // ==================== STEP 3: Multi-User Trading ====================
-        console.log('\n📊 STEP 3: Multi-User Trading Simulation\n');
+        // ==================== STEP 4: Multi-User Trading Simulation ====================
+        console.log('\n📊 STEP 4: Multi-User Trading Simulation\n');
         console.log('='.repeat(80));
 
         // Track positions
@@ -328,8 +328,8 @@ async function main() {
         positions.charlie.noShares += sharesToBuy3;
         positions.charlie.totalSpent += trade3.cost;
 
-        // ==================== STEP 4: Pool State & Positions ====================
-        console.log('\n📊 STEP 4: Current Pool State\n');
+        // ==================== STEP 5: Pool State & Positions ====================
+        console.log('\n📊 STEP 5: Current Pool State\n');
         console.log('='.repeat(80));
 
         const totalVolume = positions.alice.totalSpent + positions.bob.totalSpent + positions.charlie.totalSpent;
@@ -358,8 +358,8 @@ async function main() {
         console.log(`     Spent: ${Number(positions.charlie.totalSpent) / 1_000_000} USDC`);
         console.log(`     Avg price: $${(Number(positions.charlie.totalSpent) / Number(positions.charlie.noShares)).toFixed(4)}/share\n`);
 
-        // ==================== STEP 5: Market Resolution & Payouts ====================
-        console.log('\n📊 STEP 5: Market Resolution Simulation\n');
+        // ==================== STEP 6: Market Resolution & Payouts ====================
+        console.log('\n📊 STEP 6: Market Resolution Simulation\n');
         console.log('='.repeat(80));
 
         console.log('🔮 Scenario 1: YES wins (ETH reaches $5000)\n');
@@ -384,8 +384,8 @@ async function main() {
         console.log(`   Bob: ${Number(bobWinnings2) / 1_000_000} USDC (loss: ${(Number(positions.bob.totalSpent) / 1_000_000).toFixed(2)} USDC)`);
         console.log(`   Charlie: ${Number(charlieWinnings2) / 1_000_000} USDC (profit: ${(Number(charlieWinnings2 - positions.charlie.totalSpent) / 1_000_000).toFixed(2)} USDC)\n`);
 
-        // ==================== STEP 6: AMM Properties Verification ====================
-        console.log('\n📊 STEP 6: AMM Properties Verification\n');
+        // ==================== STEP 7: AMM Properties Verification ====================
+        console.log('\n📊 STEP 7: AMM Properties Verification\n');
         console.log('='.repeat(80));
 
         console.log('✅ LMSR AMM Properties:');
@@ -413,8 +413,9 @@ async function main() {
         console.log('='.repeat(80));
 
         console.log('\n📊 What Was Tested:');
-        console.log('   ✅ Yellow Network sandbox connection');
-        console.log('   ✅ Session creation with ledger balance');
+        console.log('   ✅ Sandbox channel creation (ID: ' + channelId + ')');
+        console.log('   ✅ Yellow Network authentication & session');
+        console.log('   ✅ Ledger balance verification (60 ytest.USD)');
         console.log('   ✅ Market creation with LMSR AMM');
         console.log('   ✅ Multi-user trading (3 users, 3 trades)');
         console.log('   ✅ Dynamic odds adjustment');

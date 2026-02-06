@@ -23,7 +23,6 @@ const WalletConnect: React.FC = () => {
     <div className="wallet-section">
       {!isConnected ? (
         <div className="wallet-disconnected">
-          <div className="wallet-icon">💼</div>
           <h3>Connect Your Wallet</h3>
           <p className="wallet-description">
             Connect your Web3 wallet to access Yellow Network prediction markets
@@ -34,7 +33,7 @@ const WalletConnect: React.FC = () => {
               onClick={() => setShowConnectors(true)}
               className="btn btn-primary btn-large"
             >
-              🔗 Connect Wallet
+              Connect Wallet
             </button>
           ) : (
             <div className="connector-list">
@@ -48,7 +47,6 @@ const WalletConnect: React.FC = () => {
                   disabled={isPending}
                   className="connector-button"
                 >
-                  <span className="connector-icon">🦊</span>
                   <span>{connector.name}</span>
                 </button>
               ))}
@@ -62,9 +60,9 @@ const WalletConnect: React.FC = () => {
           )}
           
           <div className="wallet-features">
-            <div className="feature-badge">⚡ Off-chain Trading</div>
-            <div className="feature-badge">💰 Zero Gas Fees</div>
-            <div className="feature-badge">🔒 Secure Sessions</div>
+            <div className="feature-badge">Off-chain Trading</div>
+            <div className="feature-badge">Zero Gas Fees</div>
+            <div className="feature-badge">Secure Sessions</div>
           </div>
         </div>
       ) : (
@@ -96,8 +94,9 @@ const WalletConnect: React.FC = () => {
           
           <button 
             onClick={() => disconnect()} 
-            className="btn btn-secondary btn-small"
+            className="btn btn-danger btn-sm"
           >
+            Disconnect
             Disconnect
           </button>
         </div>
