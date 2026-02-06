@@ -135,7 +135,7 @@ async function main() {
                         sessionSigner,
                         {
                             destination: CLEARNODE_ADDRESS,
-                            allocations: [{ asset: 'ytest.usd', amount: '10' }],
+                            allocations: [{ asset: 'ytest.usd', amount: '10000000' }], // 10 * 1000000 (6 decimals)
                         },
                         Date.now()
                     );
