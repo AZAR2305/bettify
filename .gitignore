@@ -43,6 +43,9 @@ markets-data.json
 sui/
 sui-contract/
 
+# Scripts folder
+scripts/
+
 # Build artifacts
 .turbo/
 .next/
