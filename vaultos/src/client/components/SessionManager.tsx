@@ -87,29 +87,30 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
       <div style={{ padding: '20px' }}>
         {!session ? (
           <>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '15px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>
               {'> Create a trading session to begin'}
             </p>
             
-            <div className="input-group">
-              <label>DEPOSIT AMOUNT (USDC):</label>
+            <div className="input-group" style={{ marginBottom: '15px' }}>
+              <label>DEPOSIT (USDC):</label>
               <input
                 type="number"
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(e.target.value)}
                 className="input"
                 disabled={!isConnected}
+                style={{ textAlign: 'center' }}
               />
             </div>
 
-            <button
-              onClick={createSession}
-              disabled={loading || !isConnected}
-              className="btn btn-primary"
-              style={{ width: '100%' }}
-            >
-              {loading ? '[CREATING...]' : '[CREATE SESSION]'}
-            </button>
+            <div className="compact-options">
+              <div
+                onClick={() => !loading && isConnected && createSession()}
+                className={`option-card clickable ${(loading || !isConnected) ? 'disabled' : ''}`}
+              >
+                <div className="option-label">{loading ? '[CREATING...]' : '[CREATE SESSION]'}</div>
+              </div>
+            </div>
 
             {!isConnected && (
               <p style={{ 
@@ -146,13 +147,14 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
               </p>
             </div>
 
-            <button
-              onClick={closeSession}
-              className="btn btn-secondary"
-              style={{ width: '100%' }}
-            >
-              [CLOSE SESSION]
-            </button>
+            <div className="compact-options" style={{ marginTop: '15px' }}>
+              <div
+                onClick={closeSession}
+                className="option-card clickable secondary"
+              >
+                <div className="option-label">[CLOSE SESSION]</div>
+              </div>
+            </div>
           </>
         )}
       </div>

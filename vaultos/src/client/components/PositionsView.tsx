@@ -3,6 +3,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import 'styled-jsx/style';
 
 interface Position {
   id: string;

@@ -28,42 +28,44 @@ const WalletConnect: React.FC = () => {
           <>
             {!showConnectors ? (
               <>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '20px' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '20px', textAlign: 'center' }}>
                   {'> Connect Web3 wallet to access Yellow Network markets'}
                 </p>
-                <button 
-                  onClick={() => setShowConnectors(true)}
-                  className="btn btn-primary"
-                  style={{ width: '100%' }}
-                >
-                  [CONNECT WALLET]
-                </button>
+                <div className="compact-options">
+                  <div 
+                    onClick={() => setShowConnectors(true)}
+                    className="option-card clickable"
+                  >
+                    <div className="option-label">[CONNECT WALLET]</div>
+                  </div>
+                </div>
               </>
             ) : (
               <>
-                <div style={{ marginBottom: '15px' }}>
+                <div className="compact-options" style={{ marginBottom: '15px' }}>
                   {connectors.map((connector) => (
-                    <button
+                    <div
                       key={connector.id}
                       onClick={() => {
-                        connect({ connector });
-                        setShowConnectors(false);
+                        if (!isPending) {
+                          connect({ connector });
+                          setShowConnectors(false);
+                        }
                       }}
-                      disabled={isPending}
-                      className="btn btn-primary"
-                      style={{ width: '100%', marginBottom: '10px' }}
+                      className={`option-card clickable ${isPending ? 'disabled' : ''}`}
                     >
-                      {connector.name}
-                    </button>
+                      <div className="option-label">{connector.name}</div>
+                    </div>
                   ))}
                 </div>
-                <button 
-                  onClick={() => setShowConnectors(false)}
-                  className="btn btn-secondary"
-                  style={{ width: '100%' }}
-                >
-                  [CANCEL]
-                </button>
+                <div className="compact-options">
+                  <div 
+                    onClick={() => setShowConnectors(false)}
+                    className="option-card clickable secondary"
+                  >
+                    <div className="option-label">[CANCEL]</div>
+                  </div>
+                </div>
               </>
             )}
           </>
@@ -94,13 +96,14 @@ const WalletConnect: React.FC = () => {
               </div>
             )}
             
-            <button 
-              onClick={() => disconnect()} 
-              className="btn btn-secondary"
-              style={{ width: '100%' }}
-            >
-              [DISCONNECT]
-            </button>
+            <div className="compact-options">
+              <div 
+                onClick={() => disconnect()}
+                className="option-card clickable secondary"
+              >
+                <div className="option-label">[DISCONNECT]</div>
+              </div>
+            </div>
           </>
         )}
       </div>

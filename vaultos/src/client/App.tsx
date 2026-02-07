@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import WalletConnect from './components/WalletConnect';
 import SessionManager from './components/SessionManager';
-import MarketDashboard from './components/MarketDashboard';
-import BalanceDisplayNew from './components/BalanceDisplayNew';
+import MarketList from './components/MarketList';
+import TradePanel from './components/TradePanel';
+import BalanceDisplay from './components/BalanceDisplay';
 import PositionsView from './components/PositionsView';
+import LedgerBalanceCard from './components/LedgerBalanceCard';
+import MarketResolutionPanel from './components/MarketResolutionPanel';
+import TradeHistory from './components/TradeHistory';
+import CommunityChatMonitor from './components/CommunityChatMonitor';
 
 const App = () => {
-  const [currentView, setCurrentView] = useState<'landing' | 'profile' | 'dashboard' | 'markets' | 'trade'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'profile' | 'dashboard' | 'markets' | 'trade' | 'admin' | 'community'>('landing');
   const [systemTime, setSystemTime] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false); // Set to true for admin access
 
   useEffect(() => {
     function updateClock() {
@@ -34,10 +40,7 @@ const App = () => {
           <div className="landing-hero">
             <div className="hero-glitch">
               <p className="hero-subtitle">{'[ INITIALIZING PROTOCOL... ]'}</p>
-              <h1 className="app-title">
-                <span className="title-line">VAULT</span>
-                <span className="title-line accent">OS</span>
-              </h1>
+              <h1 className="app-title">VAULTOS</h1>
               <p className="hero-tagline">NEXT-GEN PREDICTION MARKETS</p>
               <div className="hero-specs">
                 <span>YELLOW NETWORK</span>
@@ -50,25 +53,40 @@ const App = () => {
 
             {/* Navigation Cards */}
             <div className="landing-nav">
-              <div className="nav-card" onClick={() => setCurrentView('markets')}>
-                <div className="card-icon">📊</div>
-                <h3>[MARKETS]</h3>
-                <p>Browse active prediction markets</p>
+              <div className="nav-card market-card" onClick={() => setCurrentView('markets')}>
+                <div className="market-card-header">OPTION_01 • NAVIGATE</div>
+                <div className="market-card-body">
+                  <h3>MARKETS</h3>
+                  <p className="market-description">Browse prediction markets</p>
+                </div>
               </div>
-              <div className="nav-card" onClick={() => setCurrentView('trade')}>
-                <div className="card-icon">💱</div>
-                <h3>[TRADE]</h3>
-                <p>Execute instant trades</p>
+              <div className="nav-card market-card" onClick={() => setCurrentView('trade')}>
+                <div className="market-card-header">OPTION_02 • NAVIGATE</div>
+                <div className="market-card-body">
+                  <h3>TRADE</h3>
+                  <p className="market-description">Execute instant trades</p>
+                </div>
               </div>
-              <div className="nav-card" onClick={() => setCurrentView('dashboard')}>
-                <div className="card-icon">📈</div>
-                <h3>[DASHBOARD]</h3>
-                <p>View your positions & balance</p>
+              <div className="nav-card market-card" onClick={() => setCurrentView('dashboard')}>
+                <div className="market-card-header">OPTION_03 • NAVIGATE</div>
+                <div className="market-card-body">
+                  <h3>DASHBOARD</h3>
+                  <p className="market-description">View your positions</p>
+                </div>
               </div>
-              <div className="nav-card" onClick={() => setCurrentView('profile')}>
-                <div className="card-icon">👤</div>
-                <h3>[PROFILE]</h3>
-                <p>Manage wallet & sessions</p>
+              <div className="nav-card market-card" onClick={() => setCurrentView('profile')}>
+                <div className="market-card-header">OPTION_04 • NAVIGATE</div>
+                <div className="market-card-body">
+                  <h3>PROFILE</h3>
+                  <p className="market-description">Manage your account</p>
+                </div>
+              </div>
+              <div className="nav-card market-card" onClick={() => setCurrentView('community')}>
+                <div className="market-card-header">OPTION_05 • NAVIGATE</div>
+                <div className="market-card-body">
+                  <h3>COMMUNITY</h3>
+                  <p className="market-description">Join market discussions</p>
+                </div>
               </div>
             </div>
 
@@ -156,27 +174,16 @@ const App = () => {
                 </span>
               </div>
             </div>
-
-            <div style={{ marginTop: '40px', textAlign: 'left' }}>
-              <h3>HOW IT WORKS:</h3>
-              <ol style={{ lineHeight: '2', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                <li><strong style={{ color: 'var(--accent-retro)' }}>CONNECT:</strong> Link your Web3 wallet (MetaMask, WalletConnect, etc.)</li>
-                <li><strong style={{ color: 'var(--accent-retro)' }}>DEPOSIT:</strong> Create a trading session with your desired collateral amount</li>
-                <li><strong style={{ color: 'var(--accent-retro)' }}>TRADE:</strong> Browse markets and trade YES/NO shares with zero gas fees</li>
-                <li><strong style={{ color: 'var(--accent-retro)' }}>EARN:</strong> Move idle funds to yield generation for passive 5% APR</li>
-                <li><strong style={{ color: 'var(--accent-retro)' }}>WITHDRAW:</strong> Request partial refunds anytime or close session to settle</li>
-              </ol>
-            </div>
           </div>
         </div>
       ) : (
         // APP VIEWS - Header + Content
         <>
           <div className="header">
-            <h1>
-              <span className="bracket">{'['}</span>
-              VAULT<span className="accent">OS</span>
-              <span className="bracket">{']'}</span>
+            <h1 className="header-title">
+              <span className="title-bracket">[</span>
+              <span className="title-text">VAULTOS</span>
+              <span className="title-bracket">]</span>
             </h1>
             <div className="status-bar">
               <span>{systemTime}</span>
@@ -207,6 +214,21 @@ const App = () => {
                 [PROFILE]
               </button>
               <button
+                className={currentView === 'community' ? 'active' : ''}
+                onClick={() => setCurrentView('community')}
+              >
+                [COMMUNITY]
+              </button>
+              {isAdmin && (
+                <button
+                  className={currentView === 'admin' ? 'active' : ''}
+                  onClick={() => setCurrentView('admin')}
+                  style={{ borderColor: 'var(--accent-retro)', color: 'var(--accent-retro)' }}
+                >
+                  [ADMIN]
+                </button>
+              )}
+              <button
                 onClick={() => setCurrentView('landing')}
                 style={{ marginLeft: 'auto', borderColor: 'var(--accent-retro)' }}
               >
@@ -222,18 +244,14 @@ const App = () => {
                 <WalletConnect />
                 <SessionManager />
                 <BalanceDisplay />
+                <LedgerBalanceCard />
               </div>
             )}
 
             <div className="content">
               {currentView === 'profile' && (
                 <div className="profile-view">
-                  <h2 style={{ fontSize: '2rem', fontFamily: 'Syne, sans-serif', fontWeight: 800, textTransform: 'uppercase', marginBottom: '20px' }}>
-                    Profile Settings
-                  </h2>
-                  <p style={{ color: 'var(--text-secondary)', marginBottom: '30px' }}>
-                    {'> Manage your wallet connection and trading sessions'}
-                  </p>
+                  {/* Profile content managed via sidebar components */}
                 </div>
               )}
 
@@ -245,11 +263,68 @@ const App = () => {
                   <p style={{ color: 'var(--accent-retro)', marginBottom: '30px' }}>
                     {'[ YOUR POSITIONS & BALANCE ]'}
                   </p>
+                  
+                  <div className="dashboard-grid">
+                    {/* Positions View */}
+                    <div className="dashboard-section">
+                      <PositionsView />
+                    </div>
+                    
+                    {/* Trade History */}
+                    <div className="dashboard-section">
+                      <TradeHistory />
+                    </div>
+
+                    {/* Community Chat */}
+                    <div className="dashboard-section">
+                      <CommunityChatMonitor />
+                    </div>
+                  </div>
                 </div>
               )}
 
               {currentView === 'markets' && <MarketList />}
-              {currentView === 'trade' && <TradePanel />}
+              
+              {currentView === 'trade' && (
+                <div>
+                  <TradePanel />
+                  <div style={{ marginTop: '30px' }}>
+                    <TradeHistory />
+                  </div>
+                  <div style={{ marginTop: '30px' }}>
+                    <CommunityChatMonitor />
+                  </div>
+                </div>
+              )}
+
+              {currentView === 'community' && (
+                <div className="community-view">
+                  <h2 style={{ fontSize: '2rem', fontFamily: 'Syne, sans-serif', fontWeight: 800, textTransform: 'uppercase', marginBottom: '20px' }}>
+                    Community Hub
+                  </h2>
+                  <p style={{ color: 'var(--accent-retro)', marginBottom: '30px' }}>
+                    {'[ REAL-TIME MARKET DISCUSSION ]'}
+                  </p>
+                  <CommunityChatMonitor />
+                </div>
+              )}
+              
+              {currentView === 'admin' && (
+                <div className="admin-view">
+                  <h2 style={{ fontSize: '2rem', fontFamily: 'Syne, sans-serif', fontWeight: 800, textTransform: 'uppercase', marginBottom: '20px', color: 'var(--accent-retro)' }}>
+                    ⚡ ADMIN CONTROL PANEL
+                  </h2>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: '30px' }}>
+                    {'> System administration and market resolution'}
+                  </p>
+                  
+                  <MarketResolutionPanel isAdmin={isAdmin} />
+                  
+                  <div style={{ marginTop: '30px' }}>
+                    <TradeHistory />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </>
