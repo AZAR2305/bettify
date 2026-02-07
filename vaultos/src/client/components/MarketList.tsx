@@ -7,6 +7,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import CreateMarketForm from './CreateMarketForm';
 
 interface Market {
   id: string;
@@ -35,6 +36,7 @@ const MarketList: React.FC<MarketListProps> = ({ session, onSelectMarket }) => {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   // Fetch markets from backend
   useEffect(() => {
@@ -48,63 +50,50 @@ const MarketList: React.FC<MarketListProps> = ({ session, onSelectMarket }) => {
       const response = await fetch('http://localhost:3000/api/markets');
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 Fetched markets from API:', data);
+        console.log('📊 Number of markets:', data.markets?.length || 0);
+        
         const formattedMarkets = data.markets.map((m: any) => ({
           id: m.id,
           marketId: m.id.toUpperCase(),
           question: m.question,
           description: m.description || '',
-          yesPrice: m.odds?.YES ? parseFloat(m.odds.YES) / 100 : 0.5,
-          noPrice: m.odds?.NO ? parseFloat(m.odds.NO) / 100 : 0.5,
+          // FIX: Odds are already in decimal (0.5000), not percentage (50.00)
+          yesPrice: m.odds?.YES ? parseFloat(m.odds.YES) : 0.5,
+          noPrice: m.odds?.NO ? parseFloat(m.odds.NO) : 0.5,
           totalVolume: parseFloat(m.totalVolume) || 0,
           endTime: m.endTime ? new Date(m.endTime).toLocaleDateString() : 'TBD',
           category: 'PREDICTION',
           status: m.status
         }));
+        console.log('📊 Formatted markets:', formattedMarkets);
         setMarkets(formattedMarkets);
         setError('');
       } else {
+        console.error('❌ Failed to load markets:', response.status, response.statusText);
         setError('Failed to load markets');
+        setMarkets([]);
       }
     } catch (err) {
       console.error('Error fetching markets:', err);
-      setError('Network error - showing mock data');
-      // Fallback to mock data
-      setMarkets(getMockMarkets());
+      setError('Network error - could not load markets');
+      setMarkets([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const getMockMarkets = (): Market[] => [
-    {
-      id: 'market_1',
-      marketId: 'MARKET_001',
-      question: 'Will BTC reach $150k by end of 2026?',
-      description: 'Bitcoin to hit $150,000 USD per coin before December 31, 2026 23:59 UTC',
-      yesPrice: 0.62,
-      noPrice: 0.38,
-      totalVolume: 125000,
-      endTime: 'Dec 31, 2026',
-      category: 'CRYPTO'
-    },
-    {
-      id: 'market_2',
-      marketId: 'MARKET_002',
-      question: 'Will Ethereum complete Dencun upgrade by Q2 2026?',
-      description: 'Ethereum mainnet successfully deploys Dencun upgrade before June 30, 2026',
-      yesPrice: 0.78,
-      noPrice: 0.22,
-      totalVolume: 89000,
-      endTime: 'Jun 30, 2026',
-      category: 'CRYPTO'
-    }
-  ];
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
 
   const categories = ['ALL', 'CRYPTO', 'TECH', 'ECONOMICS', 'STOCKS', 'SPACE'];
   const filteredMarkets = selectedCategory === 'ALL' 
     ? markets 
     : markets.filter(m => m.category === selectedCategory);
+
+  const handleMarketCreated = () => {
+    setShowCreateForm(false);
+    fetchMarkets(); // Refresh markets list
+  };
 
   return (
     <div>
@@ -123,7 +112,33 @@ const MarketList: React.FC<MarketListProps> = ({ session, onSelectMarket }) => {
             {'[ POWERED BY YELLOW NETWORK • ZERO GAS • INSTANT EXECUTION ]'}
           </p>
         </div>
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="btn btn-primary"
+          style={{
+            padding: '12px 24px',
+            fontSize: '0.9rem',
+            fontWeight: 'bold',
+            fontFamily: 'Space Mono, monospace',
+            textTransform: 'uppercase',
+            background: showCreateForm ? 'var(--text-secondary)' : 'var(--accent-retro)',
+            color: '#000',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          {showCreateForm ? '[CANCEL]' : '[+ CREATE MARKET]'}
+        </button>
       </div>
+
+      {/* Create Market Form */}
+      {showCreateForm && (
+        <CreateMarketForm 
+          onMarketCreated={handleMarketCreated}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      )}
 
       {/* Category Filter */}
       <div style={{ 
@@ -144,6 +159,18 @@ const MarketList: React.FC<MarketListProps> = ({ session, onSelectMarket }) => {
       </div>
 
       {/* Markets Grid */}
+      {loading && <p>Loading markets...</p>}
+      {error && <p style={{ color: 'var(--accent-retro)' }}>{error}</p>}
+      {!loading && !error && filteredMarkets.length === 0 && (
+        <p style={{ color: 'var(--text-secondary)' }}>
+          No markets found. Create one to get started!
+        </p>
+      )}
+      {!loading && !error && filteredMarkets.length > 0 && (
+        <p style={{ color: 'var(--accent-green)', marginBottom: '20px' }}>
+          📊 Showing {filteredMarkets.length} market{filteredMarkets.length !== 1 ? 's' : ''}
+        </p>
+      )}
       <div className="markets-grid">
         {filteredMarkets.map((market) => (
           <div 

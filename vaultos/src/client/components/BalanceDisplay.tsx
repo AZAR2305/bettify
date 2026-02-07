@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 
 interface Balance {
@@ -8,17 +8,39 @@ interface Balance {
   total: number;
 }
 
-// MOCK BALANCE DATA
-const MOCK_BALANCE: Balance = {
-  active: 750.00,
-  idle: 200.00,
-  yield: 2.45,
-  total: 952.45
-};
-
 const BalanceDisplay: React.FC = () => {
   const { address, isConnected } = useAccount();
-  const [balance] = useState<Balance>(MOCK_BALANCE);
+  const [balance, setBalance] = useState<Balance>({ active: 0, idle: 0, yield: 0, total: 0 });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (address) {
+      fetchBalance();
+      const interval = setInterval(fetchBalance, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [address]);
+
+  const fetchBalance = async () => {
+    if (!address) return;
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:3000/api/balance/address/${address}`);
+      if (response.ok) {
+        const data = await response.json();
+        setBalance({
+          active: data.activeTrading || 0,
+          idle: data.idle || 0,
+          yield: data.yieldEarned || 0,
+          total: data.total || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="balance-display">
@@ -50,38 +72,11 @@ const BalanceDisplay: React.FC = () => {
               </div>
             </div>
 
-            <div className="balance-actions">
-              <button 
-                className="btn btn-secondary btn-sm"
-                onClick={() => alert('Mock: Move funds to idle (earns 5% APR)')}
-              >
-                [MOVE TO IDLE]
-              </button>
-              <button 
-                className="btn btn-secondary btn-sm"
-                onClick={() => alert('Mock: Request partial refund (max 25%)')}
-              >
-                [REQUEST REFUND]
-              </button>
-            </div>
-
-            <div className="positions">
-              <h3>POSITIONS</h3>
-              <div className="position-item">
-                <p style={{ marginBottom: '5px' }}>
-                  <strong style={{ color: 'var(--accent-retro)' }}>BTC $150K Market</strong>
-                </p>
-                <p>YES: 100 shares @ $0.62</p>
-                <p>Invested: $62.00</p>
-              </div>
-              <div className="position-item">
-                <p style={{ marginBottom: '5px' }}>
-                  <strong style={{ color: 'var(--accent-retro)' }}>ETH Upgrade Market</strong>
-                </p>
-                <p>YES: 50 shares @ $0.78</p>
-                <p>Invested: $39.00</p>
-              </div>
-            </div>
+            {loading && (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', textAlign: 'center', marginTop: '10px' }}>
+                {'> Refreshing balance...'}
+              </p>
+            )}
           </>
         )}
       </div>

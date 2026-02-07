@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import http from 'http';
 import sessionRoutes from './routes/session';
 import marketRoutes from './routes/market';
 import marketsRoutes from './routes/markets';
@@ -8,8 +9,11 @@ import balanceRoutes from './routes/balance';
 import stateRoutes from './routes/state';
 import yellowRoutes from './routes/yellow';
 import positionsRoutes from './routes/positions';
+import tradesRoutes from './routes/trades';
+import { initializeCommunityChat } from './routes/community';
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // Enable CORS for frontend
@@ -42,12 +46,17 @@ app.use('/api/balance', balanceRoutes);
 app.use('/api/state', stateRoutes);
 app.use('/api/yellow', yellowRoutes);
 app.use('/api/positions', positionsRoutes);
+app.use('/api/trades', tradesRoutes);
 
-app.listen(PORT, () => {
+// Initialize WebSocket community chat
+initializeCommunityChat(server);
+
+server.listen(PORT, () => {
   console.log(`\n🟢 ====================================`);
   console.log(`   VaultOS Server Started`);
   console.log(`====================================`);
   console.log(`📡 Server: http://localhost:${PORT}`);
+  console.log(`💬 Community: ws://localhost:${PORT}/community`);
   console.log(`🌐 Environment: SANDBOX (Testnet)`);
   console.log(`⚡ Yellow Network: Base Sepolia`);
   console.log(`🔗 Clearnode: wss://clearnet-sandbox.yellow.com/ws`);

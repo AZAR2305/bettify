@@ -86,11 +86,137 @@ export class MarketService {
     private tradeNonce: number = 0;
     private wss: WebSocketServer | null = null;
     private yellowClient: VaultOSYellowClient | null = null;
+    // Track liquidity locked in markets per user (address -> amount in USDC)
+    private lockedLiquidity: Map<string, number> = new Map();
+    private persistenceFile = './markets-data.json';
 
     constructor(privateKey?: `0x${string}`) {
         if (privateKey) {
             this.yellowClient = new VaultOSYellowClient(privateKey);
             this.initializeYellowClient();
+        }
+        // Load persisted markets on startup
+        this.loadMarkets();
+    }
+    
+    /**
+     * Load markets from disk (persist across server restarts)
+     */
+    private loadMarkets() {
+        try {
+            const fs = require('fs');
+            if (fs.existsSync(this.persistenceFile)) {
+                const data = JSON.parse(fs.readFileSync(this.persistenceFile, 'utf-8'));
+                console.log(`📂 Loading ${data.markets?.length || 0} markets from persistence...`);
+                
+                // Restore markets
+                if (data.markets) {
+                    data.markets.forEach((m: any) => {
+                        // Parse positions Map correctly
+                        const positionsMap = new Map<string, Position>();
+                        if (m.positions && typeof m.positions === 'object') {
+                            Object.entries(m.positions).forEach(([key, val]: [string, any]) => {
+                                positionsMap.set(key, {
+                                    shares: BigInt(val.shares || 0),
+                                    totalCost: BigInt(val.totalCost || 0),
+                                    outcome: val.outcome
+                                });
+                            });
+                        }
+                        
+                        // Parse AMM state - CRITICAL: restore BigInts
+                        const ammState: AmmState = {
+                            liquidityParameter: BigInt(m.amm.liquidityParameter),
+                            shares: {
+                                YES: BigInt(m.amm.shares.YES),
+                                NO: BigInt(m.amm.shares.NO)
+                            }
+                        };
+                        
+                        const market: Market = {
+                            ...m,
+                            createdAt: new Date(m.createdAt),
+                            endTime: new Date(m.endTime),
+                            resolvedAt: m.resolvedAt ? new Date(m.resolvedAt) : undefined,
+                            settledAt: m.settledAt ? new Date(m.settledAt) : undefined,
+                            totalVolume: BigInt(m.totalVolume),
+                            positions: positionsMap,
+                            trades: m.trades || [],
+                            amm: ammState
+                        };
+                        this.markets.set(market.id, market);
+                    });
+                }
+                
+                // Restore locked liquidity
+                if (data.lockedLiquidity) {
+                    this.lockedLiquidity = new Map(Object.entries(data.lockedLiquidity));
+                }
+                
+                console.log(`✅ Loaded ${this.markets.size} markets, ${this.lockedLiquidity.size} locked accounts`);
+                
+                // Verify AMM and positions for each market
+                this.markets.forEach((market, id) => {
+                    console.log(`   🔍 Market ${id}:`, {
+                        amm: {
+                            liquidity: market.amm.liquidityParameter.toString(),
+                            sharesYES: market.amm.shares.YES.toString(),
+                            sharesNO: market.amm.shares.NO.toString()
+                        },
+                        positions: market.positions.size,
+                        trades: market.trades.length
+                    });
+                });
+            } else {
+                console.log('📂 No persisted markets found, starting fresh');
+            }
+        } catch (error) {
+            console.error('❌ Failed to load markets:', error);
+        }
+    }
+    
+    /**
+     * Save markets to disk
+     */
+    private saveMarkets() {
+        try {
+            const fs = require('fs');
+            const data = {
+                markets: Array.from(this.markets.values()).map(m => {
+                    // Convert positions Map to serializable object
+                    const positionsObj: any = {};
+                    m.positions.forEach((pos, key) => {
+                        positionsObj[key] = {
+                            shares: pos.shares.toString(),
+                            totalCost: pos.totalCost.toString(),
+                            outcome: pos.outcome
+                        };
+                    });
+                    
+                    return {
+                        ...m,
+                        totalVolume: m.totalVolume.toString(),
+                        positions: positionsObj,
+                        // Convert AMM BigInts to strings
+                        amm: {
+                            liquidityParameter: m.amm.liquidityParameter.toString(),
+                            shares: {
+                                YES: m.amm.shares.YES.toString(),
+                                NO: m.amm.shares.NO.toString()
+                            }
+                        },
+                        createdAt: m.createdAt.toISOString(),
+                        endTime: m.endTime.toISOString(),
+                        resolvedAt: m.resolvedAt?.toISOString(),
+                        settledAt: m.settledAt?.toISOString()
+                    };
+                }),
+                lockedLiquidity: Object.fromEntries(this.lockedLiquidity)
+            };
+            fs.writeFileSync(this.persistenceFile, JSON.stringify(data, null, 2));
+            console.log(`💾 Saved ${this.markets.size} markets to disk`);
+        } catch (error) {
+            console.error('❌ Failed to save markets:', error);
         }
     }
 
@@ -160,6 +286,12 @@ export class MarketService {
         const liquidityBigInt = toAmmAmount(data.initialLiquidity);
         const ammState = LmsrAmm.initializeMarket(liquidityBigInt);
 
+        console.log(`🔧 AMM initialized:`, {
+            liquidityParameter: ammState.liquidityParameter.toString(),
+            sharesYES: ammState.shares.YES.toString(),
+            sharesNO: ammState.shares.NO.toString()
+        });
+
         const newMarket: Market = {
             id: marketId,
             appSessionId: data.appSessionId,
@@ -178,6 +310,19 @@ export class MarketService {
         };
 
         this.markets.set(marketId, newMarket);
+        
+        // Track locked liquidity
+        const currentLocked = this.lockedLiquidity.get(data.creatorAddress.toLowerCase()) || 0;
+        this.lockedLiquidity.set(
+            data.creatorAddress.toLowerCase(), 
+            currentLocked + data.initialLiquidity
+        );
+        
+        // PERSIST TO DISK
+        this.saveMarkets();
+        
+        console.log(`💰 Locked ${data.initialLiquidity} ytest.USD for ${data.creatorAddress}`);
+        console.log(`   Total locked: ${currentLocked + data.initialLiquidity} ytest.USD`);
         
         // Broadcast authoritative initial state
         this.broadcastMarketUpdate(newMarket);
@@ -217,8 +362,11 @@ export class MarketService {
             }
         }
 
-        // Update market state
-        market.amm = { ...market.amm, shares: result.newShares };
+        // Update market state - preserve liquidityParameter
+        market.amm = {
+            liquidityParameter: market.amm.liquidityParameter,
+            shares: result.newShares
+        };
         market.totalVolume += result.cost;
 
         // Update user position
@@ -255,6 +403,10 @@ export class MarketService {
         this.broadcastMarketUpdate(market);
 
         console.log(`💰 Trade executed: ${fromAmmAmount(sharesBigInt)} shares of ${intent.outcome} for ${fromAmmAmount(result.cost)} USDC | Market: ${intent.marketId}`);
+        
+        // Persist to disk after trade
+        this.saveMarkets();
+        
         return trade;
     }
 
@@ -430,15 +582,25 @@ export class MarketService {
         const market = this.markets.get(marketId);
         if (!market) return null;
 
-        // Calculate current prices from AMM (static methods)
-        const yesPrice = LmsrAmm.getPrice(market.amm, 0);
-        const noPrice = LmsrAmm.getPrice(market.amm, 1);
-        const prices = [yesPrice, noPrice];
+        // Defensive check for AMM state
+        if (!market.amm || !market.amm.liquidityParameter) {
+            console.error(`❌ Market ${marketId} has corrupted AMM state:`, market.amm);
+            return {
+                prices: [0.5, 0.5],
+                volumes: [0, 0],
+                totalVolume: 0,
+                participantCount: 0
+            };
+        }
+
+        // Calculate current prices from AMM using correct method
+        const odds = LmsrAmm.getOdds(market.amm);
+        const prices = [odds.YES, odds.NO];
 
         const volumes = [Number(market.amm.shares.YES), Number(market.amm.shares.NO)];
-        const participantCount = new Set(
+        const participantCount = market.positions ? new Set(
             Array.from(market.positions.keys()).map(key => key.split('_')[0])
-        ).size;
+        ).size : 0;
 
         return {
             prices,
@@ -486,12 +648,37 @@ export class MarketService {
      * Get all active markets
      */
     getActiveMarkets(): any[] {
+        console.log(`🔍 getActiveMarkets - ${this.markets.size} total markets`);
         const markets: any[] = [];
         this.markets.forEach((market) => {
-            const yesPrice = LmsrAmm.getPrice(market.amm, 0);
-            const noPrice = LmsrAmm.getPrice(market.amm, 1);
+            console.log(`   Processing market ${market.id}:`, {
+                status: market.status,
+                question: market.question,
+                hasAmm: !!market.amm,
+                ammLiquidity: market.amm?.liquidityParameter?.toString()
+            });
             
-            markets.push({
+            const yesPrice = LmsrAmm.getPrice(
+                market.amm.liquidityParameter,
+                market.amm.shares.YES,
+                market.amm.shares.NO,
+                'YES'
+            );
+            const noPrice = LmsrAmm.getPrice(
+                market.amm.liquidityParameter,
+                market.amm.shares.YES,
+                market.amm.shares.NO,
+                'NO'
+            );
+            
+            console.log(`   📊 Calculated prices: YES=${yesPrice}, NO=${noPrice}`);
+            
+            // Check if positions exists
+            if (!market.positions || !(market.positions instanceof Map)) {
+                market.positions = new Map();
+            }
+            
+            const result = {
                 id: market.id,
                 question: market.question,
                 description: market.description || '',
@@ -502,11 +689,15 @@ export class MarketService {
                 endTime: market.endTime,
                 status: market.status,
                 totalVolume: Number(market.totalVolume),
+                channelId: market.channelId,
                 participantCount: new Set(
                     Array.from(market.positions.keys()).map(key => key.split('_')[0])
                 ).size,
-            });
+            };
+            console.log(`   ✅ Adding market:`, { id: result.id, yesPrice: result.yesPrice, noPrice: result.noPrice });
+            markets.push(result);
         });
+        console.log(`📊 Returning ${markets.length} markets total`);
         return markets;
     }
 
@@ -517,8 +708,18 @@ export class MarketService {
         const market = this.markets.get(marketId);
         if (!market) return null;
         
-        const yesPrice = LmsrAmm.getPrice(market.amm, 0);
-        const noPrice = LmsrAmm.getPrice(market.amm, 1);
+        const yesPrice = LmsrAmm.getPrice(
+            market.amm.liquidityParameter,
+            market.amm.shares.YES,
+            market.amm.shares.NO,
+            'YES'
+        );
+        const noPrice = LmsrAmm.getPrice(
+            market.amm.liquidityParameter,
+            market.amm.shares.YES,
+            market.amm.shares.NO,
+            'NO'
+        );
         
         return {
             id: market.id,
@@ -531,10 +732,18 @@ export class MarketService {
             endTime: market.endTime,
             status: market.status,
             totalVolume: Number(market.totalVolume),
+            channelId: market.channelId,
             participantCount: new Set(
                 Array.from(market.positions.keys()).map(key => key.split('_')[0])
             ).size,
         };
+    }
+
+    /**
+     * Get locked liquidity for a user (liquidity committed to created markets)
+     */
+    getLockedLiquidity(address: string): number {
+        return this.lockedLiquidity.get(address.toLowerCase()) || 0;
     }
 }
 

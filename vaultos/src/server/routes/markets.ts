@@ -5,6 +5,7 @@
 import express from 'express';
 import marketService from '../services/MarketService';
 import { MarketStatus } from '../services/MarketService';
+import { LmsrAmm } from '../services/AmmMath';
 
 const router = express.Router();
 
@@ -43,7 +44,168 @@ router.post('/create', async (req, res) => {
             });
         }
 
-        // Create market
+        // **STEP 1: Transfer liquidity to Yellow Network clearnode**
+        console.log(`💸 Transferring ${liquidity / 1_000_000} ytest.USD to clearnode...`);
+        
+        const CLEARNODE_ADDRESS = '0x7df1fef832b57e46de2e1541951289c04b2781aa';
+        
+        try {
+            // Dynamic imports for ESM modules
+            const { 
+                createECDSAMessageSigner,
+                createTransferMessage,
+                createAuthRequestMessage,
+                createEIP712AuthMessageSigner,
+                createAuthVerifyMessageFromChallenge,
+                createGetLedgerBalancesMessage
+            } = await import('@erc7824/nitrolite');
+            const { privateKeyToAccount, generatePrivateKey } = await import('viem/accounts');
+            const { createWalletClient, http } = await import('viem');
+            const { baseSepolia } = await import('viem/chains');
+            const WebSocket = (await import('ws')).default;
+            
+            const CLEARNODE_URL = 'wss://clearnet-sandbox.yellow.com/ws';
+            
+            // Setup accounts
+            const adminAccount = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
+            const sessionPrivateKey = generatePrivateKey();
+            const sessionAccount = privateKeyToAccount(sessionPrivateKey);
+            const sessionSigner = createECDSAMessageSigner(sessionPrivateKey);
+            
+            // Execute transfer via WebSocket
+            const transferPromise = new Promise<string>((resolve, reject) => {
+                const ws = new WebSocket(CLEARNODE_URL);
+                let authenticated = false;
+                let balanceChecked = false;
+                let messageSequence = 0;
+                const timeout = setTimeout(() => {
+                    console.log(`   ⏰ Transfer timeout after ${++messageSequence} messages`);
+                    ws.close();
+                    reject(new Error('Timeout transferring funds (30s exceeded)'));
+                }, 30000); // Increased timeout to 30 seconds
+                
+                ws.on('open', async () => {
+                    console.log(`   📡 [${++messageSequence}] Connected to Yellow Network`);
+                    
+                    // CRITICAL: Wait before sending auth (sandbox requirement)
+                    await new Promise(r => setTimeout(r, 300));
+                    
+                    const authParams = {
+                        address: adminAccount.address,
+                        application: 'VaultOS',
+                        session_key: sessionAccount.address,
+                        allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
+                        expires_at: BigInt(Math.floor(Date.now() / 1000) + 3600),
+                        scope: 'transfer',
+                    };
+                    
+                    const authRequestMsg = await createAuthRequestMessage(authParams);
+                    ws.send(authRequestMsg);
+                    console.log(`   🔐 [${++messageSequence}] Authenticating...`);
+                });
+                
+                ws.on('message', async (data: any) => {
+                    const response = JSON.parse(data.toString());
+                    const messageType = response.res?.[1];
+                    console.log(`   📥 [${++messageSequence}] Received: ${messageType || 'unknown'}`);
+                    
+                    if (messageType === 'auth_challenge' && !authenticated) {
+                        console.log('   🔑 Received auth challenge, signing...');
+                        const challenge = response.res[2].challenge_message;
+                        const walletClient = createWalletClient({
+                            account: adminAccount,
+                            chain: baseSepolia,
+                            transport: http('https://sepolia.base.org'),
+                        });
+                        
+                        const authParamsForSigning = {
+                            session_key: sessionAccount.address,
+                            allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
+                            expires_at: BigInt(Math.floor(Date.now() / 1000) + 3600),
+                            scope: 'transfer',
+                        };
+                        
+                        const signer = createEIP712AuthMessageSigner(
+                            walletClient,
+                            authParamsForSigning,
+                            { name: 'VaultOS' }
+                        );
+                        
+                        const verifyMsg = await createAuthVerifyMessageFromChallenge(signer, challenge);
+                        ws.send(verifyMsg);
+                    }
+                    
+                    if (messageType === 'auth_verify' && !authenticated) {
+                        authenticated = true;
+                        console.log(`   ✅ [${messageSequence}] Authenticated successfully`);
+                        // CRITICAL: Check balance before transfer (sandbox requirement)
+                        await new Promise(r => setTimeout(r, 300));
+                        
+                        console.log(`   💵 [${++messageSequence}] Checking ledger balance...`);
+                        const balanceMsg = await createGetLedgerBalancesMessage(
+                            sessionSigner,
+                            adminAccount.address,
+                            Date.now()
+                        );
+                        ws.send(balanceMsg);
+                    }
+                    
+                    if (messageType === 'get_ledger_balances' && !balanceChecked) {
+                        balanceChecked = true;
+                        const balances = response.res[2].ledger_balances;
+                        const usdBal = balances.find((b: any) => b.asset === 'ytest.usd');
+                        const amount = usdBal ? parseFloat(usdBal.amount) / 1_000_000 : 0;
+                        console.log(`   💰 [${messageSequence}] Current balance: ${amount.toFixed(6)} ytest.USD`);
+                        
+                        // CRITICAL: Wait before sending transfer (sandbox requirement)
+                        await new Promise(r => setTimeout(r, 500));
+                        
+                        // Send transfer
+                        console.log(`   📤 [${++messageSequence}] Initiating transfer: ${liquidity / 1_000_000} ytest.USD → clearnode`);
+                        const transferMsg = await createTransferMessage(
+                            sessionSigner,
+                            {
+                                destination: CLEARNODE_ADDRESS,
+                                allocations: [{ asset: 'ytest.usd', amount: liquidity.toString() }], // Already in 6 decimals
+                            },
+                            Date.now()
+                        );
+                        ws.send(transferMsg);
+                    }
+                    
+                    if (messageType === 'transfer') {
+                        const transferId = response.res[0];
+                        clearTimeout(timeout);
+                        ws.close();
+                        const idStr = typeof transferId === 'string' ? transferId : JSON.stringify(transferId);
+                        console.log(`   ✅ [${messageSequence}] Transfer confirmed! ID: ${idStr.slice(0, 50)}...`);
+                        resolve(idStr);
+                    }
+                });
+                
+                ws.on('error', (error: Error) => {
+                    console.error('   ❌ WebSocket error:', error.message);
+                    clearTimeout(timeout);
+                    reject(error);
+                });
+                
+                ws.on('close', () => {
+                    console.log('   🔌 Connection closed');
+                });
+            });
+            
+            const transferId = await transferPromise;
+            console.log(`✅ Liquidity transferred to clearnode! Transfer ID: ${transferId}`);
+            
+        } catch (transferError: any) {
+            console.error('❌ Failed to transfer liquidity:', transferError);
+            return res.status(500).json({
+                success: false,
+                error: `Failed to transfer liquidity to Yellow Network: ${transferError.message}`
+            });
+        }
+
+        // **STEP 2: Create market (only if transfer succeeded)**
         const market = await marketService.createMarket({
             appSessionId: sessionId,
             channelId: channelId,
@@ -81,27 +243,42 @@ router.post('/create', async (req, res) => {
  */
 router.get('/', async (req, res) => {
     try {
+        console.log('📊 GET /api/markets called');
         const markets = marketService.getActiveMarkets();
+        console.log(`📊 MarketService returned ${markets.length} markets`);
         
-        const marketsData = markets.map(market => ({
-            id: market.id,
-            question: market.question,
-            description: market.description,
-            status: market.status,
-            endTime: market.endTime,
-            totalVolume: market.totalVolume.toString(),
-            channelId: market.channelId,
-            // Get current odds
-            odds: {
-                YES: market.amm.shares.YES.toString(),
-                NO: market.amm.shares.NO.toString()
-            }
-        }));
+        const marketsData = markets.map(market => {
+            // getActiveMarkets() already calculates yesPrice/noPrice from AMM
+            // No need to access market.amm here - use the pre-calculated prices
+            
+            return {
+                id: market.id,
+                question: market.question,
+                description: market.description,
+                status: market.status,
+                endTime: market.endTime,
+                totalVolume: market.totalVolume.toString(),
+                channelId: market.channelId,
+                // Use pre-calculated prices from getActiveMarkets()
+                odds: {
+                    YES: market.yesPrice.toFixed(4),
+                    NO: market.noPrice.toFixed(4)
+                }
+            };
+        });
 
         res.json({
             success: true,
             markets: marketsData
         });
+        console.log(`✅ Sent response:`, JSON.stringify({ 
+            success: true, 
+            marketCount: marketsData.length,
+            firstMarket: marketsData[0] ? {
+                id: marketsData[0].id,
+                odds: marketsData[0].odds
+            } : 'none'
+        }));
     } catch (error: any) {
         console.error('Get markets error:', error);
         res.status(500).json({
@@ -127,6 +304,7 @@ router.get('/:id', async (req, res) => {
             });
         }
 
+        // getMarketById() already returns an object with yesPrice/noPrice calculated
         res.json({
             success: true,
             market: {
@@ -138,8 +316,8 @@ router.get('/:id', async (req, res) => {
                 totalVolume: market.totalVolume.toString(),
                 channelId: market.channelId,
                 odds: {
-                    YES: market.amm.shares.YES.toString(),
-                    NO: market.amm.shares.NO.toString()
+                    YES: market.yesPrice.toFixed(4),
+                    NO: market.noPrice.toFixed(4)
                 }
             }
         });
@@ -160,8 +338,16 @@ router.post('/:id/trade', async (req, res) => {
     try {
         const { id } = req.params;
         const { userAddress, outcome, amount } = req.body;
+        
+        console.log(`💰 Trade request for market ${id}:`, {
+            userAddress,
+            outcome,
+            amount,
+            bodyKeys: Object.keys(req.body)
+        });
 
         if (!userAddress || !outcome || !amount) {
+            console.error('❌ Trade failed: Missing required fields:', { userAddress: !!userAddress, outcome: !!outcome, amount: !!amount });
             return res.status(400).json({
                 success: false,
                 error: 'Missing required fields: userAddress, outcome, amount'

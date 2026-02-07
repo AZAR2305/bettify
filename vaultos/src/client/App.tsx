@@ -8,7 +8,8 @@ import PositionsView from './components/PositionsView';
 import LedgerBalanceCard from './components/LedgerBalanceCard';
 import MarketResolutionPanel from './components/MarketResolutionPanel';
 import TradeHistory from './components/TradeHistory';
-import CommunityChatMonitor from './components/CommunityChatMonitor';
+import CommunityChat from './components/CommunityChat';
+import FaucetButton from './components/FaucetButton';
 
 const App = () => {
   const [currentView, setCurrentView] = useState<'landing' | 'profile' | 'dashboard' | 'markets' | 'trade' | 'admin' | 'community'>('landing');
@@ -251,7 +252,20 @@ const App = () => {
             <div className="content">
               {currentView === 'profile' && (
                 <div className="profile-view">
-                  {/* Profile content managed via sidebar components */}
+                  <h2 style={{ fontSize: '2rem', fontFamily: 'Syne, sans-serif', fontWeight: 800, textTransform: 'uppercase', marginBottom: '20px' }}>
+                    User Profile
+                  </h2>
+                  <p style={{ color: 'var(--accent-retro)', marginBottom: '30px' }}>
+                    {'[ YOUR ACCOUNT & BALANCE ]'}
+                  </p>
+                  
+                  {/* Faucet Button */}
+                  <FaucetButton onSuccess={() => {
+                    // Trigger balance refresh
+                    window.dispatchEvent(new Event('refreshBalance'));
+                  }} />
+                  
+                  {/* Wallet & Session Info shown in sidebar */}
                 </div>
               )}
 
@@ -277,7 +291,7 @@ const App = () => {
 
                     {/* Community Chat */}
                     <div className="dashboard-section">
-                      <CommunityChatMonitor />
+                      <CommunityChat />
                     </div>
                   </div>
                 </div>
@@ -292,7 +306,7 @@ const App = () => {
                     <TradeHistory />
                   </div>
                   <div style={{ marginTop: '30px' }}>
-                    <CommunityChatMonitor />
+                    <CommunityChat />
                   </div>
                 </div>
               )}
@@ -305,7 +319,7 @@ const App = () => {
                   <p style={{ color: 'var(--accent-retro)', marginBottom: '30px' }}>
                     {'[ REAL-TIME MARKET DISCUSSION ]'}
                   </p>
-                  <CommunityChatMonitor />
+                  <CommunityChat />
                 </div>
               )}
               

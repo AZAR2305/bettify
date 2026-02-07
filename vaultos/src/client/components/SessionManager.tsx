@@ -1,10 +1,10 @@
 /**
- * Yellow Network Session Manager - MOCK VERSION
+ * Yellow Network Session Manager
  * 
- * Demonstrates session lifecycle with mock data
- * In production: handles OFF-CHAIN state channel creation
+ * Handles real Yellow Network authentication and session creation
+ * Creates off-chain state channels for trading
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 
 interface Session {
@@ -21,62 +21,110 @@ interface SessionManagerProps {
 
 const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
   const { address, isConnected } = useAccount();
-  const { signMessageAsync } = useSignMessage();
-  
-  // Check ytest.USD balance
-  const { data: ytestBalance, refetch: refetchBalance } = useReadContract({
-    address: YTEST_USD_TOKEN,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  });
-
   const [session, setSession] = useState<Session | null>(null);
   const [depositAmount, setDepositAmount] = useState<string>('1000');
   const [loading, setLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
 
-  const createSession = () => {
+  // Load existing session from localStorage
+  useEffect(() => {
+    if (address) {
+      const savedSession = localStorage.getItem(`session_${address}`);
+      if (savedSession) {
+        const parsedSession = JSON.parse(savedSession);
+        // Check if session is expired
+        if (parsedSession.expiresAt > Date.now()) {
+          setSession(parsedSession);
+          onSessionChange?.(parsedSession);
+        } else {
+          localStorage.removeItem(`session_${address}`);
+        }
+      }
+    }
+  }, [address]);
+
+  const createSession = async () => {
     if (!address) {
       alert('Please connect your wallet first');
       return;
     }
 
-    // Check ytest.USD balance (optional for demo - tokens may not show in MetaMask yet)
-    const balanceNum = parseFloat(formattedBalance);
-    const depositNum = parseFloat(depositAmount);
-    
-    if (balanceNum < depositNum) {
-      // Show warning but allow proceeding (tokens might exist but not imported to MetaMask)
-      console.warn(`⚠️ Balance shows ${formattedBalance} but requesting ${depositAmount} - proceeding anyway (demo mode)`);
-      setFaucetMessage(`⚠️ Balance check bypassed for demo. If you got tokens via faucet, this will work!`);
-      // Don't return - let them proceed
-    }
-
     setLoading(true);
     
-    // Simulate session creation
-    setTimeout(() => {
+    try {
+      // Step 1: Create Yellow Network channel
+      setStatusMessage('🔐 Connecting to Yellow Network...');
+      console.log('🔐 Authenticating with Yellow Network...');
+      const channelResponse = await fetch('http://localhost:3000/api/yellow/create-channel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: address
+        })
+      });
+
+      if (!channelResponse.ok) {
+        const errorData = await channelResponse.json();
+        throw new Error(errorData.error || 'Failed to create Yellow Network channel');
+      }
+
+      const channelData = await channelResponse.json();
+      setStatusMessage('✅ Channel created! Creating session...');
+      console.log('✅ Channel created:', channelData.channelId);
+
+      // Step 2: Create trading session
+      setStatusMessage('📝 Creating trading session...');
+      const sessionResponse = await fetch('http://localhost:3000/api/yellow/create-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: address,
+          channelId: channelData.channelId
+        })
+      });
+
+      if (!sessionResponse.ok) {
+        const errorData = await sessionResponse.json();
+        throw new Error(errorData.error || 'Failed to create session');
+      }
+
+      const sessionData = await sessionResponse.json();
+      console.log('✅ Session created:', sessionData.sessionId);
+
+      setStatusMessage('💾 Saving session...');
       const newSession: Session = {
-        sessionId: `session_${Date.now()}`,
-        channelId: `channel_${Math.random().toString(36).substring(7)}`,
+        sessionId: sessionData.sessionId,
+        channelId: channelData.channelId,
         depositAmount,
         createdAt: Date.now(),
         expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       };
       
+      // Save to localStorage
+      localStorage.setItem(`session_${address}`, JSON.stringify(newSession));
+      
       setSession(newSession);
-      onSessionChange && onSessionChange(newSession);
+      onSessionChange?.(newSession);
+      setStatusMessage('');
+      
+      alert(`✅ Yellow Network authenticated!\n\nChannel ID: ${channelData.channelId}\nSession ID: ${sessionData.sessionId}\n\nYou can now create markets and trade!`);
+    } catch (error: any) {
+      console.error('❌ Authentication error:', error);
+      setStatusMessage('');
+      alert(`Failed to authenticate with Yellow Network:\n\n${error.message}`);
+    } finally {
       setLoading(false);
-    }, 1500);
+      setStatusMessage('');
+    }
   };
 
   const closeSession = () => {
     if (confirm('Close trading session and settle?')) {
+      if (address) {
+        localStorage.removeItem(`session_${address}`);
+      }
       setSession(null);
-      onSessionChange && onSessionChange(null);
+      onSessionChange?.(null);
     }
   };
 
@@ -88,8 +136,24 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
         {!session ? (
           <>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>
-              {'> Create a trading session to begin'}
+              {'> Authenticate with Yellow Network to trade'}
             </p>
+            
+            {statusMessage && (
+              <div style={{
+                background: 'rgba(255, 215, 0, 0.1)',
+                border: '1px solid var(--accent-retro)',
+                borderRadius: '4px',
+                padding: '10px',
+                marginBottom: '15px',
+                fontSize: '0.8rem',
+                textAlign: 'center',
+                color: 'var(--accent-retro)',
+                fontFamily: 'Space Mono, monospace'
+              }}>
+                {statusMessage}
+              </div>
+            )}
             
             <div className="input-group" style={{ marginBottom: '15px' }}>
               <label>DEPOSIT (USDC):</label>
@@ -108,7 +172,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
                 onClick={() => !loading && isConnected && createSession()}
                 className={`option-card clickable ${(loading || !isConnected) ? 'disabled' : ''}`}
               >
-                <div className="option-label">{loading ? '[CREATING...]' : '[CREATE SESSION]'}</div>
+                <div className="option-label">{loading ? '[AUTHENTICATING...]' : '[AUTHENTICATE YELLOW NETWORK]'}</div>
               </div>
             </div>
 
@@ -119,9 +183,19 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
                 marginTop: '10px',
                 textAlign: 'center'
               }}>
-                {'> Connect wallet first'}
+                {'> Connect wallet to authenticate'}
               </p>
             )}
+
+            <p style={{ 
+              color: 'var(--accent-retro)', 
+              fontSize: '0.7rem', 
+              marginTop: '15px',
+              textAlign: 'center',
+              fontStyle: 'italic'
+            }}>
+              {'> Creates real Yellow Network channel & session'}
+            </p>
           </>
         ) : (
           <>

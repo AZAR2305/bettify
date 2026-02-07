@@ -193,29 +193,156 @@ router.post('/create-session', async (req, res) => {
 });
 
 /**
- * Get balance
- * GET /api/yellow/balance
+ * Get balance - Query real Yellow Network ledger balance
+ * GET /api/yellow/balance/:address
  */
-router.get('/balance', async (req, res) => {
-    const { address } = req.query;
+router.get('/balance/:address', async (req, res) => {
+    const { address } = req.params;
 
     if (!address) {
         return res.status(400).json({ error: 'address required' });
     }
 
     try {
-        // In production, query actual balance from Yellow Network
-        // For now, return ledger balance
+        console.log(`🔍 Querying REAL Yellow Network balance for ${address}...`);
+        
+        // Dynamic imports for ESM modules
+        const { 
+            createECDSAMessageSigner,
+            createGetLedgerBalancesMessage,
+            createAuthRequestMessage,
+            createEIP712AuthMessageSigner,
+            createAuthVerifyMessageFromChallenge
+        } = await import('@erc7824/nitrolite');
+        const { privateKeyToAccount, generatePrivateKey } = await import('viem/accounts');
+        const { createWalletClient, http } = await import('viem');
+        const { baseSepolia } = await import('viem/chains');
+        const WebSocket = (await import('ws')).default;
+        
+        const CLEARNODE_URL = 'wss://clearnet-sandbox.yellow.com/ws';
+        
+        // Setup accounts
+        const adminAccount = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
+        const sessionPrivateKey = generatePrivateKey();
+        const sessionAccount = privateKeyToAccount(sessionPrivateKey);
+        const sessionSigner = createECDSAMessageSigner(sessionPrivateKey);
+        
+        // Create promise to handle WebSocket communication
+        const balancePromise = new Promise<number>((resolve, reject) => {
+            const ws = new WebSocket(CLEARNODE_URL);
+            let authenticated = false;
+            const timeout = setTimeout(() => {
+                ws.close();
+                reject(new Error('Timeout waiting for balance'));
+            }, 10000);
+            
+            ws.on('open', async () => {
+                const authParams = {
+                    address: adminAccount.address,
+                    application: 'VaultOS',
+                    session_key: sessionAccount.address,
+                    allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
+                    expires_at: BigInt(Math.floor(Date.now() / 1000) + 3600),
+                    scope: 'transfer',
+                };
+                
+                const authRequestMsg = await createAuthRequestMessage(authParams);
+                ws.send(authRequestMsg);
+            });
+            
+            ws.on('message', async (data: any) => {
+                const response = JSON.parse(data.toString());
+                const messageType = response.res?.[1];
+                
+                if (messageType === 'auth_challenge' && !authenticated) {
+                    const challenge = response.res[2].challenge_message;
+                    const walletClient = createWalletClient({
+                        account: adminAccount,
+                        chain: baseSepolia,
+                        transport: http('https://sepolia.base.org'),
+                    });
+                    
+                    const authParamsForSigning = {
+                        session_key: sessionAccount.address,
+                        allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
+                        expires_at: BigInt(Math.floor(Date.now() / 1000) + 3600),
+                        scope: 'transfer',
+                    };
+                    
+                    const signer = createEIP712AuthMessageSigner(
+                        walletClient,
+                        authParamsForSigning,
+                        { name: 'VaultOS' }
+                    );
+                    
+                    const verifyMsg = await createAuthVerifyMessageFromChallenge(signer, challenge);
+                    ws.send(verifyMsg);
+                }
+                
+                if (messageType === 'auth_verify' && !authenticated) {
+                    authenticated = true;
+                    // Request balance
+                    const msg = await createGetLedgerBalancesMessage(
+                        sessionSigner,
+                        adminAccount.address,
+                        Date.now()
+                    );
+                    ws.send(msg);
+                }
+                
+                if (messageType === 'get_ledger_balances') {
+                    const balances = response.res[2].ledger_balances;
+                    const usdBal = balances.find((b: any) => b.asset === 'ytest.usd');
+                    const amount = usdBal ? parseFloat(usdBal.amount) / 1000000 : 0;
+                    clearTimeout(timeout);
+                    ws.close();
+                    resolve(amount);
+                }
+            });
+            
+            ws.on('error', (error: Error) => {
+                clearTimeout(timeout);
+                reject(error);
+            });
+        });
+        
+        const totalBalance = await balancePromise;
+        
+        // Subtract locked liquidity (from created markets)
+        const marketService = (await import('../services/MarketService')).default;
+        const lockedLiquidity = marketService.getLockedLiquidity(address);
+        const availableBalance = Math.max(0, totalBalance - lockedLiquidity);
+        
+        const balance = {
+            total: totalBalance,
+            available: availableBalance,
+            reserved: lockedLiquidity,
+            pending: 0
+        };
+
+        console.log(`✅ Real balance: ${balance.total} ytest.USD`);
+        console.log(`   Available: ${balance.available} | Locked in markets: ${balance.reserved}`);
+
         res.json({
             success: true,
-            balance: '60', // ytest.USD ledger balance
-            asset: 'ytest.usd'
+            ...balance,
+            asset: 'ytest.usd',
+            address: address
         });
     } catch (error: any) {
-        console.error('Balance query error:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message || 'Failed to get balance'
+        console.error('❌ Balance query error:', error);
+        
+        // Fallback to mock data if real query fails
+        console.warn('⚠️ Falling back to mock data');
+        res.json({
+            success: true,
+            total: 0,
+            available: 0,
+            reserved: 0,
+            pending: 0,
+            asset: 'ytest.usd',
+            address: address,
+            error: 'Could not query Yellow Network: ' + error.message
         });
     }
 });

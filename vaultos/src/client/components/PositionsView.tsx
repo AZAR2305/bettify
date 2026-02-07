@@ -29,6 +29,10 @@ const PositionsView: React.FC = () => {
       // Refresh every 5 seconds
       const interval = setInterval(fetchPositions, 5000);
       return () => clearInterval(interval);
+    } else {
+      // Clear positions when wallet disconnects
+      setPositions([]);
+      setLoading(false);
     }
   }, [address]);
 
@@ -210,6 +214,68 @@ const PositionsView: React.FC = () => {
                       {' '}
                       ({((position.pnl / position.totalCost) * 100).toFixed(1)}%)
                     </span>
+                  </div>
+                </div>
+
+                {/* WIN/LOSS/REFUND CALCULATIONS */}
+                <div style={{ 
+                  marginTop: '20px', 
+                  padding: '15px', 
+                  background: 'rgba(255, 215, 0, 0.05)',
+                  border: '1px solid rgba(255, 215, 0, 0.2)',
+                  borderRadius: '4px'
+                }}>
+                  <h4 style={{ 
+                    color: 'var(--accent-retro)', 
+                    fontSize: '0.9rem', 
+                    marginBottom: '12px',
+                    fontFamily: 'Space Mono, monospace',
+                    textTransform: 'uppercase'
+                  }}>
+                    [ PAYOUT SCENARIOS ]
+                  </h4>
+                  
+                  <div style={{ fontSize: '0.85rem', lineHeight: '1.8' }}>
+                    {/* WIN SCENARIO */}
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ color: '#4ade80', fontWeight: 'bold', marginBottom: '4px' }}>
+                        ✅ IF YOU WIN (Market resolves to {position.outcome}):
+                      </div>
+                      <div style={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}>
+                        <div>• You get: ${position.shares.toFixed(2)} USDC (full payout)</div>
+                        <div>• Profit: <span style={{ color: '#4ade80', fontWeight: 'bold' }}>+${(position.shares - position.totalCost).toFixed(2)} USDC</span></div>
+                        <div>• Return: <span style={{ color: '#4ade80' }}>+{(((position.shares - position.totalCost) / position.totalCost) * 100).toFixed(1)}%</span></div>
+                      </div>
+                    </div>
+
+                    {/* LOSE SCENARIO */}
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ color: '#ef4444', fontWeight: 'bold', marginBottom: '4px' }}>
+                        ❌ IF YOU LOSE (Market resolves to {position.outcome === 'YES' ? 'NO' : 'YES'}):
+                      </div>
+                      <div style={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}>
+                        <div>• You get: $0.00 USDC</div>
+                        <div>• Loss: <span style={{ color: '#ef4444', fontWeight: 'bold' }}>-${position.totalCost.toFixed(2)} USDC</span></div>
+                        <div>• Return: <span style={{ color: '#ef4444' }}>-100%</span></div>
+                      </div>
+                    </div>
+
+                    {/* REFUND SCENARIO */}
+                    {position.marketStatus === 'OPEN' && (
+                      <div>
+                        <div style={{ color: 'var(--accent-retro)', fontWeight: 'bold', marginBottom: '4px' }}>
+                          💰 IF YOU REFUND NOW (25% early exit):
+                        </div>
+                        <div style={{ paddingLeft: '20px', color: 'var(--text-secondary)' }}>
+                          <div>• Current value: ${position.currentValue.toFixed(2)} USDC</div>
+                          <div>• Refund (25%): <span style={{ color: 'var(--accent-retro)', fontWeight: 'bold' }}>${(position.currentValue * 0.25).toFixed(2)} USDC</span></div>
+                          <div>• Net loss: <span style={{ color: '#ef4444' }}>-${(position.totalCost - (position.currentValue * 0.25)).toFixed(2)} USDC</span></div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px', fontStyle: 'italic' }}>
+                            ℹ️ Refund available only while market is OPEN
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

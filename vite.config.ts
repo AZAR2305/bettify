@@ -7,6 +7,11 @@ export default defineConfig({
   publicDir: 'public',
   server: {
     port: 5173,
+    strictPort: true,  // Fail if port is already in use
+    hmr: {
+      port: 5173,  // Use same port for HMR websocket
+      host: 'localhost'
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

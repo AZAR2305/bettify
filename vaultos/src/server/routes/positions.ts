@@ -26,6 +26,12 @@ router.get('/:address', async (req, res) => {
         const allPositions: any[] = [];
 
         markets.forEach(market => {
+            // Defensive check: ensure positions Map exists
+            if (!market.positions || !(market.positions instanceof Map)) {
+                console.warn(`⚠️ Market ${market.id} has no positions Map`);
+                return;
+            }
+
             const userPosition = market.positions.get(address.toLowerCase());
             
             if (userPosition && (userPosition.yesShares > 0 || userPosition.noShares > 0)) {
