@@ -1,5 +1,52 @@
+# Dependencies
 node_modules/
 dist/
+build/
+
+# Environment variables
 .env
+.env.local
+.env.production
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation (keep only README.md)
+*.md
+!README.md
+!ARCHITECTURE.md
+
+# Test data
+markets-data.json
+*.test.json
+
+# Temporary files
+*.tmp
+.cache/
+
+# Unused blockchain folders
+sui/
+sui-contract/
+
+# Build artifacts
+.turbo/
+.next/
+out/
+
+# TypeScript
+*.tsbuildinfo

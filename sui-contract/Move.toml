@@ -1,9 +1,0 @@
-[package]
-name = "vaultos"
-version = "1.0.0"
-edition = "2024.beta"
-
-[dependencies]
-
-[addresses]
-vaultos = "0x0"
