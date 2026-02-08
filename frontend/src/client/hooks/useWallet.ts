@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { connectWallet, disconnectWallet, getWalletAddress } from '../services/walletService';
+import { connectWallet, getWalletAddress } from '../services/walletService';
 
 const useWallet = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -8,7 +8,7 @@ const useWallet = () => {
   useEffect(() => {
     const fetchWalletAddress = async () => {
       const address = await getWalletAddress();
-      if (address) {
+      if (address !== null) {
         setWalletAddress(address);
         setIsConnected(true);
       }
@@ -18,15 +18,15 @@ const useWallet = () => {
   }, []);
 
   const connect = async () => {
-    const address = await connectWallet();
-    if (address) {
+    await connectWallet();
+    const address = await getWalletAddress();
+    if (address !== null) {
       setWalletAddress(address);
       setIsConnected(true);
     }
   };
 
   const disconnect = async () => {
-    await disconnectWallet();
     setWalletAddress(null);
     setIsConnected(false);
   };

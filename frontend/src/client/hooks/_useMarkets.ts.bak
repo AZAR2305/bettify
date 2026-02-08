@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import apiService from '../services/apiService';
+import * as apiService from '../services/apiService';
 
 const useMarkets = () => {
   const [markets, setMarkets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchMarkets = async () => {
     try {
       const response = await apiService.getMarkets();
       setMarkets(response.data);
     } catch (err) {
-      setError(err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }

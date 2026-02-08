@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { apiService } from '../services/apiService';
+import * as apiService from '../services/apiService';
 
-const useSession = (walletAddress) => {
-  const [sessionId, setSessionId] = useState(null);
+const useSession = (walletAddress: string | undefined) => {
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const createSession = async () => {
@@ -12,7 +12,7 @@ const useSession = (walletAddress) => {
         const response = await apiService.createSession(walletAddress);
         setSessionId(response.sessionId);
       } catch (err) {
-        setError(err.message);
+        setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
@@ -30,7 +30,7 @@ const useSession = (walletAddress) => {
       await apiService.closeSession(sessionId);
       setSessionId(null);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Unknown error');
     }
   };
 
