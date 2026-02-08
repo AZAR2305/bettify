@@ -10,7 +10,7 @@
  * - Off-chain balance tracking
  * - Cooperative channel closure
  */
-import { VaultOSYellowClient, createVaultOSYellowClient } from '../../../../backend-yellow/yellow/vaultos-yellow.js';
+import { VaultOSYellowClient } from '../../../../backend-yellow/yellow/vaultos-yellow.js';
 
 interface SessionData {
   sessionId: string;
@@ -66,7 +66,14 @@ export class SessionService {
     console.log(`============================================\n`);
 
     // Create Yellow Network client
-    const yellowClient = createVaultOSYellowClient();
+    const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
+    const rpcUrl = process.env.SEPOLIA_RPC_URL;
+    
+    if (!privateKey) {
+      throw new Error('PRIVATE_KEY not found in environment');
+    }
+    
+    const yellowClient = new VaultOSYellowClient(privateKey, rpcUrl);
 
     try {
       // Connect and authenticate with Yellow Network
