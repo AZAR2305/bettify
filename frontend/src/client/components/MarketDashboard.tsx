@@ -608,7 +608,7 @@ const MarketDashboard: React.FC = () => {
             </p>
           )}
         </div>
-      )}
+      </div>
 
       <h3>📊 Active Markets</h3>
       {markets.length === 0 ? (
