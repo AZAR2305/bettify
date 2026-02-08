@@ -29,7 +29,7 @@ const PORT = process.env.PORT || 3000;
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
     ? process.env.CORS_ORIGIN || 'https://bettify.vercel.app'
-    : ['http://localhost:5173', 'http://localhost:3000'],
+    : ['http://localhost:5173', 'https://bettify-33d9.onrender.com'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

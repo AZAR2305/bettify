@@ -180,7 +180,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Server starts on `http://localhost:3000`
+Server starts on `https://bettify-33d9.onrender.com`
 
 ### First Trade in 30 Seconds
 
@@ -444,7 +444,7 @@ npm run dev
 
 Starts:
 - Frontend dev server on `http://localhost:5173`
-- Backend API server on `http://localhost:3000`
+- Backend API server on `https://bettify-33d9.onrender.com`
 - Hot reload enabled
 
 ### Production Build

@@ -61,7 +61,7 @@ const CommunityChat: React.FC = () => {
     try {
       isConnectingRef.current = true; // Mark as connecting
       setConnectionStatus('connecting');
-      const ws = new WebSocket('ws://localhost:3000/community');
+      const ws = new WebSocket('wss://bettify-33d9.onrender.com/community');
 
       ws.onopen = () => {
         console.log('✅ Connected to community chat');

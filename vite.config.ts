@@ -14,7 +14,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://bettify-33d9.onrender.com',
         changeOrigin: true,
       },
     },

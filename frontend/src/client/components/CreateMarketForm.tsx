@@ -106,7 +106,7 @@ const CreateMarketForm: React.FC<CreateMarketFormProps> = ({ onMarketCreated, on
       // Convert liquidity to 6 decimals (USDC format)
       const liquidityWith6Decimals = parseFloat(liquidity) * 1_000_000;
 
-      const response = await fetch('http://localhost:3000/api/markets/create', {
+      const response = await fetch('https://bettify-33d9.onrender.com/api/markets/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

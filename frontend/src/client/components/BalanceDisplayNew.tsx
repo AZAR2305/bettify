@@ -40,7 +40,7 @@ const BalanceDisplayNew: React.FC = () => {
     
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/api/state/${session.sessionId}`);
+      const response = await fetch(`https://bettify-33d9.onrender.com/api/state/${session.sessionId}`);
       if (response.ok) {
         const data = await response.json();
         setBalance(data.state.balances);

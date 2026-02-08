@@ -25,7 +25,7 @@ const BalanceDisplay: React.FC = () => {
     if (!address) return;
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/api/balance/address/${address}`);
+      const response = await fetch(`https://bettify-33d9.onrender.com/api/balance/address/${address}`);
       if (response.ok) {
         const data = await response.json();
         setBalance({

@@ -34,7 +34,9 @@ router.get('/health', (req, res) => {
         message: 'Backend server is running',
         note: 'Yellow Network authentication now uses MetaMask directly from frontend'
     });
-});\n\n/**
+});
+
+/**
  * Create sandbox channel
  * POST /api/yellow/create-channel
  */
