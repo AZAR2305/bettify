@@ -51,5 +51,10 @@ scripts/
 .next/
 out/
 
+# Hardhat
+artifacts/
+cache/
+typechain-types/
+
 # TypeScript
 *.tsbuildinfo
