@@ -82,25 +82,35 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
         setTimeout(() => reject(new Error('Connection timeout')), 10000);
       });
       
-      // Step 3: Send auth request
-      setStatusMessage('📤 Sending authentication request...');
+      // Step 3: Create properly signed auth request message
+      setStatusMessage('📤 Preparing authentication request...');
       const expiresAt = Math.floor(Date.now() / 1000) + 3600; // 1 hour
-      const authRequest = {
-        jsonrpc: '2.0',
-        id: Date.now(),
-        method: 'auth_request',
-        params: {
-          address: address.toLowerCase(),
-          application: 'Yellow',  // Must match EIP-712 domain name
-          session_key: sessionAccount.address.toLowerCase(),
-          allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
-          expires_at: expiresAt,
-          scope: 'bettify.trading',
-        },
+      
+      // Sign the auth request with session key
+      const authParams = {
+        address: address.toLowerCase(),
+        application: 'Yellow',  // Must match EIP-712 domain name
+        session_key: sessionAccount.address.toLowerCase(),
+        allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
+        expires_at: expiresAt,
+        scope: 'bettify.trading',
       };
       
-      websocket.send(JSON.stringify(authRequest));
-      console.log('✅ Auth request sent');
+      // Create message to sign
+      const messageId = Date.now();
+      const authMessage = JSON.stringify([messageId, 'auth_request', authParams, messageId]);
+      
+      // Sign with session private key
+      const signature = await sessionAccount.signMessage({ message: authMessage });
+      
+      // Send signed message to Yellow Network
+      const signedAuthRequest = {
+        res: [messageId, 'auth_request', authParams, messageId],
+        sig: [signature]
+      };
+      
+      websocket.send(JSON.stringify(signedAuthRequest));
+      console.log('✅ Signed auth request sent');
       
       // Step 4: Wait for auth challenge and sign with MetaMask
       setStatusMessage('⏳ Waiting for authentication challenge...');
@@ -118,10 +128,21 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
             
             console.log('📨 Yellow Network message:', messageType, messageData);
             
-            // Check for error responses
+            // Check for error responses - log full details
             if (messageType === 'error') {
-              console.error('❌ Yellow Network error:', messageData);
+              console.error('❌ Yellow Network error details:', {
+                code: messageData?.code,
+                message: messageData?.message,
+                details: messageData,
+                fullResponse: response
+              });
               reject(new Error(messageData?.message || JSON.stringify(messageData) || 'Authentication failed'));
+              return;
+            }
+            
+            // Ignore 'assets' message (config/welcome message from Yellow Network)
+            if (messageType === 'assets') {
+              console.log('ℹ️ Received assets/config from Yellow Network (ignoring)');
               return;
             }
             
@@ -163,18 +184,21 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
               console.log('✅ Signature obtained from MetaMask');
               setStatusMessage('📤 Verifying signature...');
               
-              // Send auth_verify
-              const authVerify = {
-                jsonrpc: '2.0',
-                id: Date.now(),
-                method: 'auth_verify',
-                params: {
-                  challenge_message: challenge,
-                  signature: signature,
-                },
+              // Send auth_verify with session signature
+              const verifyId = Date.now();
+              const verifyParams = {
+                challenge_message: challenge,
+                signature: signature,
+              };
+              const verifyMessage = JSON.stringify([verifyId, 'auth_verify', verifyParams, verifyId]);
+              const verifySignature = await sessionAccount.signMessage({ message: verifyMessage });
+              
+              const signedAuthVerify = {
+                res: [verifyId, 'auth_verify', verifyParams, verifyId],
+                sig: [verifySignature]
               };
               
-              websocket!.send(JSON.stringify(authVerify));
+              websocket!.send(JSON.stringify(signedAuthVerify));
               console.log('✅ Signature sent for verification');
             }
             
@@ -184,17 +208,20 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
               console.log('✅ Authentication successful!');
               setStatusMessage('📤 Requesting ledger balances...');
               
-              // Request ledger balances using correct Yellow Network format
-              const ledgerRequest = {
-                jsonrpc: '2.0',
-                id: Date.now(),
-                method: 'get_ledger_balances',
-                params: {
-                  address: address.toLowerCase(),
-                },
+              // Request ledger balances with session signature
+              const balanceId = Date.now();
+              const balanceParams = {
+                address: address.toLowerCase(),
+              };
+              const balanceMessage = JSON.stringify([balanceId, 'get_ledger_balances', balanceParams, balanceId]);
+              const balanceSignature = await sessionAccount.signMessage({ message: balanceMessage });
+              
+              const signedBalanceRequest = {
+                res: [balanceId, 'get_ledger_balances', balanceParams, balanceId],
+                sig: [balanceSignature]
               };
               
-              websocket!.send(JSON.stringify(ledgerRequest));
+              websocket!.send(JSON.stringify(signedBalanceRequest));
               console.log('✅ Ledger balance request sent');
             }
             
