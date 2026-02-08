@@ -3,9 +3,9 @@
  */
 
 import express from 'express';
-import marketService from '../services/MarketService';
-import { MarketStatus } from '../services/MarketService';
-import { LmsrAmm } from '../services/AmmMath';
+import marketService from '../services/MarketService.js';
+import { MarketStatus } from '../services/MarketService.js';
+import { LmsrAmm } from '../services/AmmMath.js';
 
 const router = express.Router();
 

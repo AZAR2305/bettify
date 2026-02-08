@@ -25,8 +25,6 @@ interface Position {
 
 const MarketDashboard: React.FC = () => {
   const { address, isConnected } = useAccount();
-  const ADMIN_WALLET = '0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1';
-  const isAdmin = address?.toLowerCase() === ADMIN_WALLET.toLowerCase();
 
   const [markets, setMarkets] = useState<Market[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -101,11 +99,6 @@ const MarketDashboard: React.FC = () => {
   };
 
   const createMarket = async () => {
-    if (!isAdmin) {
-      alert('Only admin can create markets');
-      return;
-    }
-
     if (!newMarket.question.trim()) {
       alert('Please enter a market question');
       return;
@@ -561,9 +554,8 @@ const MarketDashboard: React.FC = () => {
         </div>
       </div>
 
-      {isAdmin && (
-        <div className="admin-panel">
-          <h3>👑 Admin: Create New Market</h3>
+      <div className="admin-panel">
+        <h3>📝 Create New Market</h3>
           <div className="form-group">
             <label>Question *</label>
             <input
@@ -621,7 +613,7 @@ const MarketDashboard: React.FC = () => {
       <h3>📊 Active Markets</h3>
       {markets.length === 0 ? (
         <div className="empty-state">
-          <p>No active markets yet. {isAdmin && 'Create one above!'}</p>
+          <p>No active markets yet. Create one above!</p>
         </div>
       ) : (
         <div className="markets-grid">

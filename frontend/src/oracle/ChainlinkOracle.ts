@@ -14,7 +14,7 @@
  */
 
 import { ethers } from 'ethers';
-import { OracleInterface, OracleProof, OracleType, OracleConfig } from './OracleInterface';
+import { OracleInterface, OracleProof, OracleType, OracleConfig } from './OracleInterface.js';
 
 // Chainlink Aggregator ABI (minimal interface)
 const AGGREGATOR_ABI = [

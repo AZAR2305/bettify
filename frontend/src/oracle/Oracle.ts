@@ -5,7 +5,7 @@
  * Always resolves YES after market funded
  */
 
-import { OracleInterface, OracleProof, OracleType, OracleConfig } from './OracleInterface';
+import { OracleInterface, OracleProof, OracleType, OracleConfig } from './OracleInterface.js';
 
 export class Oracle extends OracleInterface {
     constructor() {

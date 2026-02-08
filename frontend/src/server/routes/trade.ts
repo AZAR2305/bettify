@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { SessionService } from '../services/SessionService';
-import MarketService from '../services/MarketService';
+import { SessionService } from '../services/SessionService.js';
+import MarketService from '../services/MarketService.js';
 
 const router = Router();
 const sessionService = new SessionService();

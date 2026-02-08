@@ -3,7 +3,7 @@
  */
 
 import express from 'express';
-import marketService from '../services/MarketService';
+import marketService from '../services/MarketService.js';
 
 const router = express.Router();
 

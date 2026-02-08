@@ -17,9 +17,9 @@
  * Phase: Phase 3 - Oracle Integration
  */
 
-import { OracleInterface, ResolutionEvent, OracleProof } from './OracleInterface';
-import MarketService from '../server/services/MarketService';
-import { MarketStatus } from '../server/services/MarketService';
+import { OracleInterface, ResolutionEvent, OracleProof } from './OracleInterface.js';
+import MarketService from '../server/services/MarketService.js';
+import { MarketStatus } from '../server/services/MarketService.js';
 
 export interface ResolutionConfig {
     checkIntervalSeconds: number; // How often to check for markets ready to resolve

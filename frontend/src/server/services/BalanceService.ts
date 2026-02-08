@@ -3,7 +3,7 @@
  * Manages user balances in the state channel via Yellow Network
  */
 
-import { SessionService } from './SessionService';
+import { SessionService } from './SessionService.js';
 
 const sessionService = new SessionService();
 

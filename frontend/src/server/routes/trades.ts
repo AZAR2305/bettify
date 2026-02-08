@@ -3,7 +3,7 @@
  * Returns user's trading history across all markets
  */
 import { Router, Request, Response } from 'express';
-import marketService from '../services/MarketService';
+import marketService from '../services/MarketService.js';
 
 const router = Router();
 

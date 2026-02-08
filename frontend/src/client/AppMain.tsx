@@ -17,9 +17,6 @@ const App: React.FC = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [balance, setBalance] = useState<string>('0');
   const [currentView, setCurrentView] = useState<'markets' | 'trade' | 'admin'>('markets');
-  
-  // Check if user is admin (you can customize this logic)
-  const isAdmin = address === '0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1'; // Your wallet
 
   useEffect(() => {
     if (!isConnected) {
@@ -207,15 +204,13 @@ const App: React.FC = () => {
                   <span className="nav-icon">💱</span>
                   <span className="nav-label">Trade</span>
                 </button>
-                {isAdmin && (
-                  <button
-                    className={`nav-btn ${currentView === 'admin' ? 'active' : ''}`}
-                    onClick={() => setCurrentView('admin')}
-                  >
-                    <span className="nav-icon">⚙️</span>
-                    <span className="nav-label">Admin</span>
-                  </button>
-                )}
+                <button
+                  className={`nav-btn ${currentView === 'admin' ? 'active' : ''}`}
+                  onClick={() => setCurrentView('admin')}
+                >
+                  <span className="nav-icon">⚙️</span>
+                  <span className="nav-label">Admin</span>
+                </button>
               </nav>
             </aside>
 
@@ -227,7 +222,7 @@ const App: React.FC = () => {
               {currentView === 'trade' && (
                 <TradePanelNew />
               )}
-              {currentView === 'admin' && isAdmin && (
+              {currentView === 'admin' && (
                 <AdminPanel
                   channelId={channelId!}
                   sessionId={sessionId!}

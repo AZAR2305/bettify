@@ -14,7 +14,6 @@ import FaucetButton from './components/FaucetButton';
 const App = () => {
   const [currentView, setCurrentView] = useState<'landing' | 'profile' | 'dashboard' | 'markets' | 'trade' | 'admin' | 'community'>('landing');
   const [systemTime, setSystemTime] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false); // Set to true for admin access
 
   useEffect(() => {
     function updateClock() {
@@ -220,15 +219,13 @@ const App = () => {
               >
                 [COMMUNITY]
               </button>
-              {isAdmin && (
-                <button
-                  className={currentView === 'admin' ? 'active' : ''}
-                  onClick={() => setCurrentView('admin')}
-                  style={{ borderColor: 'var(--accent-retro)', color: 'var(--accent-retro)' }}
-                >
-                  [ADMIN]
-                </button>
-              )}
+              <button
+                className={currentView === 'admin' ? 'active' : ''}
+                onClick={() => setCurrentView('admin')}
+                style={{ borderColor: 'var(--accent-retro)', color: 'var(--accent-retro)' }}
+              >
+                [ADMIN]
+              </button>
               <button
                 onClick={() => setCurrentView('landing')}
                 style={{ marginLeft: 'auto', borderColor: 'var(--accent-retro)' }}
@@ -332,7 +329,7 @@ const App = () => {
                     {'> System administration and market resolution'}
                   </p>
                   
-                  <MarketResolutionPanel isAdmin={isAdmin} />
+                  <MarketResolutionPanel />
                   
                   <div style={{ marginTop: '30px' }}>
                     <TradeHistory />

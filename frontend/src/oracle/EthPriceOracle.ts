@@ -7,7 +7,7 @@
  * Example: "Will ETH reach $5000?" → Fetch real ETH price
  */
 
-import { OracleInterface, OracleProof, OracleType, OracleConfig } from './OracleInterface';
+import { OracleInterface, OracleProof, OracleType, OracleConfig } from './OracleInterface.js';
 
 export interface EthPriceCondition {
     marketId: string;

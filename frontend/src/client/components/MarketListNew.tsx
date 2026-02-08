@@ -17,10 +17,6 @@ interface Market {
 const MarketListNew: React.FC = () => {
   const { address, isConnected } = useAccount();
   
-  // 🔒 ADMIN-ONLY: Only admin wallet can create markets
-  const ADMIN_WALLET = '0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1';
-  const isAdmin = address?.toLowerCase() === ADMIN_WALLET.toLowerCase();
-  
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -68,11 +64,6 @@ const MarketListNew: React.FC = () => {
   const createMarket = async () => {
     if (!newMarket.question.trim()) {
       alert('Please enter a question');
-      return;
-    }
-
-    if (!isAdmin) {
-      alert('Only admin wallet can create markets');
       return;
     }
 
@@ -141,20 +132,13 @@ const MarketListNew: React.FC = () => {
           )}
           {!session && <div className="yellow-status">Create a session in sidebar to start</div>}
         </div>
-        {isAdmin && (
-          <button 
-            className="btn btn-primary"
-            onClick={() => setShowCreate(!showCreate)}
-            disabled={!session || creating}
-          >
-            {showCreate ? 'Cancel' : 'Create Market (Admin)'}
-          </button>
-        )}
-        {!isAdmin && (
-          <div className="admin-only-notice" style={{ color: '#FFD700', fontSize: '14px' }}>
-            Only admin can create markets
-          </div>
-        )}
+        <button 
+          className="btn btn-primary"
+          onClick={() => setShowCreate(!showCreate)}
+          disabled={!session || creating}
+        >
+          {showCreate ? 'Cancel' : '🎓 Create Market'}
+        </button>
       </div>
 
       {showCreate && (

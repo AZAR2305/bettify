@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { BalanceService } from '../services/BalanceService';
+import { BalanceService } from '../services/BalanceService.js';
 import { Request, Response } from 'express';
 
 const router = Router();

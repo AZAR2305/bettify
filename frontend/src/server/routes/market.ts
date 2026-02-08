@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import marketService from '../services/MarketService';
+import marketService from '../services/MarketService.js';
 
 const router = Router();
 
@@ -14,14 +14,7 @@ router.post('/create', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields: question and creatorAddress' });
         }
 
-        // 🔒 ADMIN-ONLY: Only admin wallet can create markets
-        const ADMIN_WALLET = '0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1';
-        if (creatorAddress.toLowerCase() !== ADMIN_WALLET.toLowerCase()) {
-            return res.status(403).json({ 
-                error: 'Unauthorized: Only admin can create markets',
-                adminWallet: ADMIN_WALLET
-            });
-        }
+        // ✅ Anyone can create markets - no admin restriction
 
         const market = await marketService.createMarket({
             appSessionId: sessionId || channelId || 'session_' + Date.now(), // Use sessionId or channelId

@@ -10,7 +10,7 @@
  * - Off-chain balance tracking
  * - Cooperative channel closure
  */
-import { VaultOSYellowClient, createVaultOSYellowClient } from '../../../../backend-yellow/yellow/vaultos-yellow';
+import { VaultOSYellowClient, createVaultOSYellowClient } from '../../../../backend-yellow/yellow/vaultos-yellow.js';
 
 interface SessionData {
   sessionId: string;
