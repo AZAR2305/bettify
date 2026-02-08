@@ -28,17 +28,13 @@ const CHAIN_ID = 84532;
  * GET /api/yellow/health
  */
 router.get('/health', (req, res) => {
-    const hasPrivateKey = !!process.env.PRIVATE_KEY;
-    const privateKeyLength = process.env.PRIVATE_KEY?.length || 0;
-    
     res.json({
-        status: hasPrivateKey ? 'configured' : 'missing_config',
+        status: 'ok',
         clearnode: CLEARNODE_URL,
-        privateKey: hasPrivateKey ? `Set (${privateKeyLength} chars)` : 'NOT SET - Configure PRIVATE_KEY in Render environment',
-        message: hasPrivateKey 
-            ? 'Server is configured correctly' 
-            : 'PRIVATE_KEY environment variable must be set on Render',
-        instructions: hasPrivateKey ? null : [\n            '1. Go to Render Dashboard → Your Service → Environment',\n            '2. Add environment variable: PRIVATE_KEY',\n            '3. Value: Your wallet private key (0x...)',\n            '4. Save (service will auto-restart)',\n            '5. Make sure this wallet has ytest.USD tokens from Yellow faucet'\n        ]\n    });\n});\n\n/**
+        message: 'Backend server is running',
+        note: 'Yellow Network authentication now uses MetaMask directly from frontend'
+    });
+});\n\n/**
  * Create sandbox channel
  * POST /api/yellow/create-channel
  */

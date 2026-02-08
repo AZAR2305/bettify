@@ -91,7 +91,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
         method: 'auth_request',
         params: {
           address: address.toLowerCase(),
-          application: 'Bettify Prediction Market',
+          application: 'Yellow',  // Must match EIP-712 domain name
           session_key: sessionAccount.address.toLowerCase(),
           allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
           expires_at: expiresAt,
@@ -124,21 +124,15 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
             if (messageType === 'auth_challenge') {
               setStatusMessage('🔏 Please sign with MetaMask...');
               const challenge = response.result[2].challenge_message;
-              console.log('🔐 Auth challenge received, requesting signature...');
+              console.log('🔐 Auth challenge received:', challenge);
+              console.log('🔐 Session key:', sessionAccount.address);
               
-              // EIP-712 signature with MetaMask
+              // EIP-712 signature with MetaMask - must match Yellow Network's exact format
               const signature = await signTypedDataAsync({
                 domain: {
                   name: 'Yellow',
-                  version: '1',
-                  chainId: 84532n, // Base Sepolia
                 },
                 types: {
-                  EIP712Domain: [
-                    { name: 'name', type: 'string' },
-                    { name: 'version', type: 'string' },
-                    { name: 'chainId', type: 'uint256' },
-                  ],
                   AuthMessage: [
                     { name: 'session_key', type: 'address' },
                     { name: 'allowances', type: 'Allowance[]' },
@@ -153,7 +147,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
                 },
                 primaryType: 'AuthMessage',
                 message: {
-                  session_key: sessionAccount.address.toLowerCase() as `0x${string}`,
+                  session_key: sessionAccount.address as `0x${string}`,
                   allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
                   expires_at: BigInt(expiresAt),
                   scope: 'bettify.trading',
