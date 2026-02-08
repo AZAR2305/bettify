@@ -147,34 +147,42 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
               const challenge = messageData.challenge_message;
               console.log('🔐 Auth challenge received:', challenge);
               console.log('🔐 Session key:', sessionAccount.address);
-              
-              // Wait for walletClient to be ready
-              if (!walletClient) {
-                console.error('❌ Wallet client not ready yet');
-                setStatusMessage('❌ Wallet client loading, please reconnect wallet and try again');
-                websocket?.close();
-                setLoading(false);
-                return;
-              }
-              
-              // Create EIP-712 signer with user's wallet
-              const authParamsForSigning = {
-                session_key: sessionAccount.address,
-                allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
-                expires_at: expiresAt,
-                scope: 'bettify.trading',
+
+              // Wait for walletClient to be ready (poll every 200ms, up to 5s)
+              let retries = 0;
+              const maxRetries = 25;
+              const waitForWalletClient = async () => {
+                if (!walletClient) {
+                  if (retries++ < maxRetries) {
+                    setTimeout(waitForWalletClient, 200);
+                    return;
+                  } else {
+                    setStatusMessage('❌ Wallet client not ready, please reconnect wallet and try again');
+                    websocket?.close();
+                    setLoading(false);
+                    return;
+                  }
+                }
+                // Create EIP-712 signer with user's wallet
+                const authParamsForSigning = {
+                  session_key: sessionAccount.address,
+                  allowances: [{ asset: 'ytest.usd', amount: '1000000000' }],
+                  expires_at: expiresAt,
+                  scope: 'bettify.trading',
+                };
+
+                const signer = createEIP712AuthMessageSigner(
+                  walletClient,
+                  authParamsForSigning,
+                  { name: 'Yellow' }
+                );
+
+                // Create and send auth_verify message
+                const verifyMsg = await createAuthVerifyMessageFromChallenge(signer, challenge);
+                websocket!.send(verifyMsg);
+                console.log('✅ Auth verify sent via Nitrolite SDK');
               };
-              
-              const signer = createEIP712AuthMessageSigner(
-                walletClient,
-                authParamsForSigning,
-                { name: 'Yellow' }
-              );
-              
-              // Create and send auth_verify message
-              const verifyMsg = await createAuthVerifyMessageFromChallenge(signer, challenge);
-              websocket!.send(verifyMsg);
-              console.log('✅ Auth verify sent via Nitrolite SDK');
+              waitForWalletClient();
             }
             
             // Step 4b: Handle auth_verify success - request ledger balances
