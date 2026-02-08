@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { useAccount } from 'wagmi';
+import { API_URL } from '../config/api';
 
 interface FaucetButtonProps {
   onSuccess?: () => void;
@@ -36,7 +37,7 @@ const FaucetButton: React.FC<FaucetButtonProps> = ({ onSuccess }) => {
       }
 
       // Call backend to request faucet
-      const response = await fetch('http://localhost:3000/api/yellow/request-faucet', {
+      const response = await fetch(`${API_URL}/api/yellow/request-faucet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

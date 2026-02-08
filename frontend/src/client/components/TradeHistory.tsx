@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { API_URL } from '../config/api';
 
 interface Trade {
   id: string;
@@ -34,7 +35,7 @@ const TradeHistory: React.FC = () => {
     
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/api/trades/${address}`);
+      const response = await fetch(`${API_URL}/api/trades/${address}`);
       
       if (response.ok) {
         const data = await response.json();

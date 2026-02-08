@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { API_URL } from '../config/api';
 
 interface Market {
   id: string;
@@ -79,7 +80,7 @@ const MarketDashboard: React.FC = () => {
 
   const loadMarkets = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/market');
+      const response = await fetch(`${API_URL}/api/market`);
       if (response.ok) {
         const data = await response.json();
         setMarkets(data.markets || []);
@@ -125,7 +126,7 @@ const MarketDashboard: React.FC = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/market/create', {
+      const response = await fetch(`${API_URL}/api/market/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -176,7 +177,7 @@ const MarketDashboard: React.FC = () => {
     try {
       const amountMicro = Math.floor(parseFloat(tradeForm.amount) * 1_000_000);
       
-      const response = await fetch(`http://localhost:3000/api/market/${marketId}/bet`, {
+      const response = await fetch(`${API_URL}/api/market/${marketId}/bet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

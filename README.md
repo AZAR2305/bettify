@@ -166,7 +166,7 @@ If Yellow Network misbehaves:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/bettify.git
+git clone https://github.com/AZAR2305/bettify.git
 cd bettify
 
 # Install dependencies
@@ -463,15 +463,13 @@ Create `.env` file:
 
 ```env
 # Yellow Network Configuration
-YELLOW_API_KEY=your_api_key
+
 YELLOW_CLEARNODE_URL=https://testnet.yellow.org
 
 # Server Configuration
 PORT=3000
 NODE_ENV=production
 
-# Admin Wallet (for market resolution)
-ADMIN_WALLET=0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1
 ```
 
 ---
@@ -590,8 +588,8 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 ## 📞 Support & Contact
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/bettify/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/bettify/discussions)
+- **Issues**: [GitHub Issues](https://github.com/AZAR2305/bettify/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/AZAR2305/bettify/discussions)
 - **Twitter**: [@BettifyApp](https://twitter.com/BettifyApp)
 
 ---

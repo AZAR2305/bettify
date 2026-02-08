@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { API_URL } from '../config/api';
 
 interface Session {
   sessionId: string;
@@ -55,7 +56,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
       // Step 1: Create Yellow Network channel
       setStatusMessage('🔐 Connecting to Yellow Network...');
       console.log('🔐 Authenticating with Yellow Network...');
-      const channelResponse = await fetch('http://localhost:3000/api/yellow/create-channel', {
+      const channelResponse = await fetch(`${API_URL}/api/yellow/create-channel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -74,7 +75,7 @@ const SessionManager: React.FC<SessionManagerProps> = ({ onSessionChange }) => {
 
       // Step 2: Create trading session
       setStatusMessage('📝 Creating trading session...');
-      const sessionResponse = await fetch('http://localhost:3000/api/yellow/create-session', {
+      const sessionResponse = await fetch(`${API_URL}/api/yellow/create-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { API_URL } from '../config/api';
 
 interface Market {
   id: string;
@@ -30,7 +31,7 @@ const MarketResolutionPanel: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = fals
 
   const fetchMarkets = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/market');
+      const response = await fetch(`${API_URL}/api/market`);
       if (response.ok) {
         const data = await response.json();
         const formattedMarkets = data.markets.map((m: any) => ({
@@ -66,7 +67,7 @@ const MarketResolutionPanel: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = fals
     setActionError('');
 
     try {
-      const response = await fetch(`http://localhost:3000/api/market/${selectedMarketId}/freeze`, {
+      const response = await fetch(`${API_URL}/api/market/${selectedMarketId}/freeze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ callerAddress: address })
@@ -92,7 +93,7 @@ const MarketResolutionPanel: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = fals
     setActionError('');
 
     try {
-      const response = await fetch(`http://localhost:3000/api/market/${selectedMarketId}/resolve`, {
+      const response = await fetch(`${API_URL}/api/market/${selectedMarketId}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ outcome, callerAddress: address })
@@ -119,7 +120,7 @@ const MarketResolutionPanel: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = fals
     setActionError('');
 
     try {
-      const response = await fetch(`http://localhost:3000/api/market/${selectedMarketId}/settle`, {
+      const response = await fetch(`${API_URL}/api/market/${selectedMarketId}/settle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

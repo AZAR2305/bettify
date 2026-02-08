@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import CreateMarketForm from './CreateMarketForm';
+import { API_URL } from '../config/api';
 
 interface Market {
   id: string;
@@ -47,7 +48,7 @@ const MarketList: React.FC<MarketListProps> = ({ session, onSelectMarket }) => {
 
   const fetchMarkets = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/markets');
+      const response = await fetch(`${API_URL}/api/markets`);
       if (response.ok) {
         const data = await response.json();
         console.log('📊 Fetched markets from API:', data);

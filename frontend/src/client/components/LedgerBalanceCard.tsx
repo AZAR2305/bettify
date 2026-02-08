@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { API_URL } from '../config/api';
 
 const LedgerBalanceCard: React.FC = () => {
   const { address, isConnected } = useAccount();
@@ -25,7 +26,7 @@ const LedgerBalanceCard: React.FC = () => {
     
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/api/yellow/balance/${address}`);
+      const response = await fetch(`${API_URL}/api/yellow/balance/${address}`);
       
       if (response.ok) {
         const data = await response.json();

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { API_URL } from '../config/api';
 
 interface Market {
   id: string;
@@ -35,7 +36,7 @@ const TradePanelNew: React.FC = () => {
 
   const checkBalance = async (sessionId: string) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/balance/${sessionId}`);
+      const response = await fetch(`${API_URL}/api/balance/${sessionId}`);
       if (response.ok) {
         const data = await response.json();
         // Balance is in 6 decimals
@@ -56,7 +57,7 @@ const TradePanelNew: React.FC = () => {
 
   const loadMarkets = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/market');
+      const response = await fetch(`${API_URL}/api/market`);
       if (response.ok) {
         const data = await response.json();
         setMarkets(data.markets || []);
@@ -116,7 +117,7 @@ const TradePanelNew: React.FC = () => {
         amount,
       });
 
-      const response = await fetch('http://localhost:3000/api/trade/execute', {
+      const response = await fetch(`${API_URL}/api/trade/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

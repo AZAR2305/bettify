@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { API_URL } from '../config/api';
 
 interface CreateMarketFormProps {
   onMarketCreated?: () => void;
@@ -45,7 +46,7 @@ const CreateMarketForm: React.FC<CreateMarketFormProps> = ({ onMarketCreated, on
       const session = JSON.parse(savedSession);
       
       // Query balance from backend
-      const response = await fetch(`http://localhost:3000/api/balance/${session.sessionId}`);
+      const response = await fetch(`${API_URL}/api/balance/${session.sessionId}`);
       if (response.ok) {
         const data = await response.json();
         // Balance is in 6 decimals, convert to regular number
