@@ -10,7 +10,7 @@ interface Market {
   creatorAddress?: string;
 }
 
-const MarketResolutionPanel: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
+const MarketResolutionPanel: React.FC = () => {
   const { address } = useAccount();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,9 +18,6 @@ const MarketResolutionPanel: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = fals
   const [showResolution, setShowResolution] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [actionError, setActionError] = useState('');
-
-  const ADMIN_WALLET = '0xFefa60F5aA4069F96b9Bf65c814DDb3A604974e1';
-  const isAdminWallet = address?.toLowerCase() === ADMIN_WALLET.toLowerCase();
 
   // Fetch real markets from API
   useEffect(() => {
@@ -54,11 +51,6 @@ const MarketResolutionPanel: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = fals
   };
 
   const selectedMarket = markets.find(m => m.id === selectedMarketId);
-
-  // Don't render if not admin wallet
-  if (!isAdminWallet) {
-    return null;
-  }
 
   const handleFreeze = async () => {
     if (!address || !selectedMarketId) return;
@@ -284,75 +276,8 @@ const MarketResolutionPanel: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = fals
               </span>
             </div>
           </div>
-        </>
-      )}arkets.map(market => (
-            <option key={market.id} value={market.id}>
-              {market.title} [{market.status}]
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {selectedMarket && (
-        <>
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
-              Current Status:
-            </div>
-            <span className={`status-indicator ${selectedMarket.status.toLowerCase()}`}>
-              {selectedMarket.status}
-              {selectedMarket.resolvedOutcome && ` - ${selectedMarket.resolvedOutcome} WINS`}
-            </span>
-          </div>
-
-          {selectedMarket.status === 'OPEN' && (
-            <div className="action-group">
-              <button className="btn-freeze" onClick={handleFreeze}>
-                {'[FREEZE MARKET]'}
-              </button>
-            </div>
-          )}
-
-          {(selectedMarket.status === 'FROZEN' || showResolution) && selectedMarket.status !== 'RESOLVED' && (
-            <div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px', textTransform: 'uppercase' }}>
-                Resolve Market:
-              </div>
-              <div className="resolution-buttons">
-                <button className="btn-yes" onClick={() => handleResolve('YES')}>
-                  {'[RESOLVE: YES]'}
-                </button>
-                <button className="btn-no" onClick={() => handleResolve('NO')}>
-                  {'[RESOLVE: NO]'}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {selectedMarket.status === 'RESOLVED' && (
-            <div className="terminal-section" style={{ marginTop: '15px', padding: '12px', background: 'var(--bg-color)' }}>
-              <div className="terminal-row">
-                <span className="output" style={{ color: 'var(--accent-retro)' }}>
-                  {'> Market resolved. Settlement complete. Payouts distributed.'}
-                </span>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      <div className="terminal-section" style={{ marginTop: '20px', padding: '10px', background: 'var(--bg-color)' }}>
-        <div className="terminal-row">
-          <span className="output" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            {'> OPEN → FROZEN → RESOLVED'}
-          </span>
-        </div>
-        <div className="terminal-row">
-          <span className="output" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-            {'> Freeze stops trading • Resolve determines winner • Settlement auto-executes'}
-          </span>
-        </div>
-      </div>
+      </>
+    )}
     </div>
   );
 };
