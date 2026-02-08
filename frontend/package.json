@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "tsx src/server/index.ts",
+    "start": "npx tsx src/server/index.ts",
     "server": "tsx src/server/index.ts"
   },
   "dependencies": {
